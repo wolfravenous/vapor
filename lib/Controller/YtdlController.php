@@ -1,12 +1,12 @@
 <?php
 
-namespace OCA\NCDownloader\Controller;
+namespace OCA\Vapor\Controller;
 
-use OCA\NCDownloader\Aria2\Aria2;
-use OCA\NCDownloader\Db\Helper as DbHelper;
-use OCA\NCDownloader\Tools\folderScan;
-use OCA\NCDownloader\Tools\Helper;
-use OCA\NCDownloader\Ytdl\Ytdl;
+use OCA\Vapor\Aria2\Aria2;
+use OCA\Vapor\Db\Helper as DbHelper;
+use OCA\Vapor\Tools\folderScan;
+use OCA\Vapor\Tools\Helper;
+use OCA\Vapor\Ytdl\Ytdl;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -42,7 +42,7 @@ class YtdlController extends Controller
         $this->ytdl = $ytdl;
         $this->aria2 = $aria2;
         $this->aria2->init();
-        $this->tablename = $this->dbconn->queryBuilder->getTableName("ncdownloader_info");
+        $this->tablename = $this->dbconn->queryBuilder->getTableName("vapor_info");
     }
     /**
      * @NoAdminRequired
@@ -67,9 +67,9 @@ class YtdlController extends Controller
             $tmp['speed'] = explode("|", $value['speed']);
             $tmp['progress'] = $value['progress'];
 
-            $path = $this->urlGenerator->linkToRoute('ncdownloader.Ytdl.Delete');
+            $path = $this->urlGenerator->linkToRoute('vapor.Ytdl.Delete');
             $tmp['actions'][] = ['name' => 'delete', 'path' => $path];
-            $path = $this->urlGenerator->linkToRoute('ncdownloader.Ytdl.Redownload');
+            $path = $this->urlGenerator->linkToRoute('vapor.Ytdl.Redownload');
             $tmp['actions'][] = ['name' => 'refresh', 'path' => $path];
 
             $tmp['data_gid'] = $value['gid'] ?? 0;
@@ -100,7 +100,7 @@ class YtdlController extends Controller
             $yt->videoFormat = $extension;
         }
         if (!$yt->isInstalled()) {
-            return new JSONResponse(["error" => "Please install the latest yt-dlp or make the bundled binary file executable in ncdownloader/bin"]);
+            return new JSONResponse(["error" => "Please install the latest yt-dlp or make the bundled binary file executable in vapor/bin"]);
         }
         if (Helper::isGetUrlSite($url)) {
             return new JSONResponse($this->downloadUrlSite($url));

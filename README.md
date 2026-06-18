@@ -1,4 +1,4 @@
-# NCDownloader for Nextcloud 33
+# Vapor for Nextcloud 33
 
 - [English](README.md)
 - [简体中文](README.zh-CN.md)
@@ -31,9 +31,9 @@ This fork fixes compatibility issues with **Nextcloud 33** that caused the origi
 - Ubuntu 22.04
 - PHP 8.3
 
-Original app by [shiningw](https://github.com/shiningw/ncdownloader).
-Forked from [darkpisto](https://github.com/darkpisto/ncdownloader).
-NC33 compatibility fixes by [wolfravenous](https://github.com/wolfravenous/ncdownloader).
+Original app by [shiningw](https://github.com/shiningw/vapor).
+Forked from [darkpisto](https://github.com/darkpisto/vapor).
+NC33 compatibility fixes by [wolfravenous](https://github.com/wolfravenous/vapor).
 
 ---
 
@@ -57,20 +57,20 @@ sudo apt install aria2
 **2. Navigate to your Nextcloud apps directory and clone the repo:**
 ```bash
 cd /var/www/nextcloud/apps
-sudo git clone https://github.com/wolfravenous/ncdownloader.git
+sudo git clone https://github.com/wolfravenous/vapor.git
 ```
 
 **3. Set correct ownership:**
 ```bash
-sudo chown -R www-data:www-data /var/www/nextcloud/apps/ncdownloader
+sudo chown -R www-data:www-data /var/www/nextcloud/apps/vapor
 ```
 
 **4. Create the bin directory and download yt-dlp:**
 ```bash
-sudo mkdir -p /var/www/nextcloud/apps/ncdownloader/bin
-sudo wget -O /var/www/nextcloud/apps/ncdownloader/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
-sudo chmod 755 /var/www/nextcloud/apps/ncdownloader/bin/yt-dlp
-sudo chown www-data:www-data /var/www/nextcloud/apps/ncdownloader/bin/yt-dlp
+sudo mkdir -p /var/www/nextcloud/apps/vapor/bin
+sudo wget -O /var/www/nextcloud/apps/vapor/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
+sudo chmod 755 /var/www/nextcloud/apps/vapor/bin/yt-dlp
+sudo chown www-data:www-data /var/www/nextcloud/apps/vapor/bin/yt-dlp
 ```
 
 **5. Install Node.js 20.x if not already installed:**
@@ -81,17 +81,17 @@ sudo apt install -y nodejs
 
 **6. Build the frontend assets:**
 ```bash
-cd /var/www/nextcloud/apps/ncdownloader
+cd /var/www/nextcloud/apps/vapor
 sudo npm install
 sudo npm run build
 ```
 
 **7. Enable the app:**
 ```bash
-sudo -u www-data php8.3 /var/www/nextcloud/occ app:enable ncdownloader
+sudo -u www-data php8.3 /var/www/nextcloud/occ app:enable vapor
 ```
 
-Then navigate to the NCDownloader app in your Nextcloud instance and configure your settings.
+Then navigate to the Vapor app in your Nextcloud instance and configure your settings.
 
 ---
 
@@ -108,9 +108,9 @@ sudo -u www-data php8.3 /var/www/nextcloud/occ files:scan yourusername --path="/
 
 If the in-app update button doesn't work, update yt-dlp manually:
 ```bash
-sudo wget -O /var/www/nextcloud/apps/ncdownloader/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
-sudo chmod 755 /var/www/nextcloud/apps/ncdownloader/bin/yt-dlp
-sudo chown www-data:www-data /var/www/nextcloud/apps/ncdownloader/bin/yt-dlp
+sudo wget -O /var/www/nextcloud/apps/vapor/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp
+sudo chmod 755 /var/www/nextcloud/apps/vapor/bin/yt-dlp
+sudo chown www-data:www-data /var/www/nextcloud/apps/vapor/bin/yt-dlp
 ```
 
 ---

@@ -1,6 +1,6 @@
 <?php
 
-namespace OCA\NCDownloader\Db;
+namespace OCA\Vapor\Db;
 
 
 //BEGIN STEVE CODE
@@ -30,7 +30,7 @@ class Settings
         //$this->appConfig = \OC::$server->getAppConfig();
         //$this->sysConfig = \OC::$server->getSystemConfig();
 	$this->allConfig = \OC::$server->get(IConfig::class);
-        $this->appName = 'ncdownloader';
+        $this->appName = 'vapor';
         $this->type = self::TYPE['USER'];
         $this->user = $user;
         //$this->allConfig = new AllConfig($this->sysConfig);

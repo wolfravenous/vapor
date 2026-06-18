@@ -1,14 +1,14 @@
 <?php
 
-namespace OCA\NCDownloader\Controller;
+namespace OCA\Vapor\Controller;
 
-use OCA\NCDownloader\Aria2\Aria2;
-use OCA\NCDownloader\Tools\Counters;
-use OCA\NCDownloader\Db\Helper as DbHelper;
-use OCA\NCDownloader\Tools\folderScan;
-use OCA\NCDownloader\Tools\Helper;
-use OCA\NCDownloader\Db\Settings;
-use OCA\NCDownloader\Ytdl\Ytdl;
+use OCA\Vapor\Aria2\Aria2;
+use OCA\Vapor\Tools\Counters;
+use OCA\Vapor\Db\Helper as DbHelper;
+use OCA\Vapor\Tools\folderScan;
+use OCA\Vapor\Tools\Helper;
+use OCA\Vapor\Db\Settings;
+use OCA\Vapor\Ytdl\Ytdl;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -54,7 +54,10 @@ class MainController extends Controller
         $this->dbconn = new DbHelper();
         $this->counters = new Counters($aria2, $this->dbconn, $UserId);
         $this->ytdl = $ytdl;
-        $this->isAdmin = \OC_User::isAdminUser($this->uid);
+	//$this->isAdmin = \OC_User::isAdminUser($this->uid);
+	// BEGIN STEVE EDITS
+        $this->isAdmin = $this->uid !== null && \OC_User::isAdminUser($this->uid);
+        // END STEVE EDITS
         $this->hideError = Helper::getSettings("ncd_hide_errors", false);
         $this->disable_bt_nonadmin = Helper::getAdminSettings("ncd_disable_bt");
         $this->accessDenied = $this->l10n->t("Sorry,only admin users can download files via BT!");
@@ -128,8 +131,8 @@ class MainController extends Controller
 
         $params['settings'] = json_encode([
             'is_admin' => $this->isAdmin,
-            'admin_url' => $this->urlGenerator->linkToRoute("settings.AdminSettings.index", ['section' => 'ncdownloader']),
-            'personal_url' => $this->urlGenerator->linkToRoute("settings.PersonalSettings.index", ['section' => 'ncdownloader']),
+            'admin_url' => $this->urlGenerator->linkToRoute("settings.AdminSettings.index", ['section' => 'vapor']),
+            'personal_url' => $this->urlGenerator->linkToRoute("settings.PersonalSettings.index", ['section' => 'vapor']),
             'ncd_hide_errors' => $this->hideError,
             'ncd_disable_bt' => $this->disable_bt_nonadmin,
             'ncd_downloader_dir' => Helper::getSettings("ncd_downloader_dir"),

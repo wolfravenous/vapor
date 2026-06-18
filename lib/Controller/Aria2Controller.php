@@ -1,11 +1,11 @@
 <?php
-namespace OCA\NCDownloader\Controller;
+namespace OCA\Vapor\Controller;
 
-use OCA\NCDownloader\Aria2\Aria2;
-use OCA\NCDownloader\Tools\Counters;
-use OCA\NCDownloader\Db\Helper as DbHelper;
-use OCA\NCDownloader\Tools\folderScan;
-use OCA\NCDownloader\Tools\Helper;
+use OCA\Vapor\Aria2\Aria2;
+use OCA\Vapor\Tools\Counters;
+use OCA\Vapor\Db\Helper as DbHelper;
+use OCA\Vapor\Tools\folderScan;
+use OCA\Vapor\Tools\Helper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\IRootFolder;
@@ -139,7 +139,7 @@ class Aria2Controller extends Controller
     {
         return array(
             'name' => $name,
-            'path' => $this->urlGenerator->linkToRoute('ncdownloader.Aria2.Action', ['path' => $path]),
+            'path' => $this->urlGenerator->linkToRoute('vapor.Aria2.Action', ['path' => $path]),
         );
     }
     /**

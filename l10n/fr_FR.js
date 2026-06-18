@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "ncdownloader",
+    "vapor",
     {
     "Unable to find YouTube-DL binary" : "Impossible de trouver l'exécutable pour YouTube-DL",
     "Invalid proxy address URL" : "Adresse URL invalide pour le proxy",
@@ -55,9 +55,9 @@ OC.L10N.register(
     "Active" : "Actif",
     "No Torrent Files" : "Aucun fichier torrent",
     "Upload" : "Transfert",
-    "NCDownloader" : "NCDownloader",
+    "Vapor" : "Vapor",
     "Easy to use download manager for Nextcloud" : "Gestionnaire de téléchargement facile à utiliser pour Nextcloud",
-    "Easy to use download manager using Curl/Aria2 and ytdl to allow downloading HTTP(S), FTP(S), YouTube videos and BitTorrent files. For more information on how to install, please go to https://github.com/shiningw/ncdownloader/blob/master/README.md" : "Gestionnaire de téléchargement facile à utiliser utilisant Curl/Aria2 et ytdl pour permettre le téléchargement de vidéos HTTP(S), FTP(S), YouTube et BitTorrent. Pour plus d'informations sur l'installation, rendez-vous sur https://github.com/shiningw/ncdownloader/blob/master/README.md",
+    "Easy to use download manager using Curl/Aria2 and ytdl to allow downloading HTTP(S), FTP(S), YouTube videos and BitTorrent files. For more information on how to install, please go to https://github.com/shiningw/vapor/blob/master/README.md" : "Gestionnaire de téléchargement facile à utiliser utilisant Curl/Aria2 et ytdl pour permettre le téléchargement de vidéos HTTP(S), FTP(S), YouTube et BitTorrent. Pour plus d'informations sur l'installation, rendez-vous sur https://github.com/shiningw/vapor/blob/master/README.md",
     "Active Downloads" : "Téléchargements actifs",
     " using <strong>%s</strong>" : "en utilisant <strong>%s</strong>",
     "FILENAME" : "NOM_DU_FICHIER",
@@ -169,7 +169,7 @@ OC.L10N.register(
     "FAILED!" : "ECHOUE !",
     "Aria2c is not running!" : "Aria2c ne fonctionne pas",
     "failed to get any url!" : "Echec d'obtention d'URL",
-    "NCDownloader Settings" : "NCDownloader Paramètres",
+    "Vapor Settings" : "Vapor Paramètres",
     "Aria2 and ytdl web gui for nextcloud" : "Aria2 et ytdl web interface pour nextcloud",
     "Something must have gone wrong!" : "Quelque chose a dû mal se passer !",
     "Downloading\" + \" " : "En cours de téléchargement : \" + \" ",

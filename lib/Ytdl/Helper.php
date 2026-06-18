@@ -1,8 +1,8 @@
 <?php
-namespace OCA\NCDownloader\Ytdl;
+namespace OCA\Vapor\Ytdl;
 
-use OCA\NCDownloader\Db\Helper as DbHelper;
-use OCA\NCDownloader\Tools\Helper as ToolsHelper;
+use OCA\Vapor\Db\Helper as DbHelper;
+use OCA\Vapor\Tools\Helper as ToolsHelper;
 
 class Helper
 {
@@ -18,7 +18,7 @@ class Helper
     public function __construct()
     {
         $this->dbconn = new DbHelper();
-        $this->tablename = $this->dbconn->queryBuilder->getTableName("ncdownloader_info");
+        $this->tablename = $this->dbconn->queryBuilder->getTableName("vapor_info");
 	// $this->user = \OC::$server->getUserSession()->getUser()->getUID();
 	// BEGIN STEVE EDITS
         $this->user = \OC::$server->get(\OCP\IUserSession::class)->getUser()->getUID();

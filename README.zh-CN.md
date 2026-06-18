@@ -34,4 +34,4 @@ composer install
 ```
 
 #### Nextcloud App homepage
-https://apps.nextcloud.com/apps/ncdownloader
+https://apps.nextcloud.com/apps/vapor

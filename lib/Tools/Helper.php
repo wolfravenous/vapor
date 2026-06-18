@@ -1,20 +1,20 @@
 <?php
 
-namespace OCA\NCDownloader\Tools;
+namespace OCA\Vapor\Tools;
 
 use Exception;
-use OCA\NCDownloader\Search\Sites\searchInterface;
-use OCA\NCDownloader\Aria2\Options as aria2Options;
-use OCA\NCDownloader\Db\Settings;
+use OCA\Vapor\Search\Sites\searchInterface;
+use OCA\Vapor\Aria2\Options as aria2Options;
+use OCA\Vapor\Db\Settings;
 use OCP\IUser;
 //  BEGIN STEVE EDITS
 // use OC\Files\Filesystem;
 //  END STEVE EDITS
 use OC_Util;
 use Psr\Log\LoggerInterface;
-use OCA\NCDownloader\Aria2\Aria2;
-use OCA\NCDownloader\Ytdl\Ytdl;
-use OCA\NCDownloader\Http\Client;
+use OCA\Vapor\Aria2\Aria2;
+use OCA\Vapor\Ytdl\Ytdl;
+use OCA\Vapor\Http\Client;
 
 require __DIR__ . "/../../vendor/autoload.php";
 
@@ -153,7 +153,7 @@ class Helper
         $logger = \OC::$server->get(LoggerInterface::class);
 //        $logger = \OC::$server->getLogger();
         $logger = self::getLogger();
-        $logger->error($msg, ['app' => 'ncdownloader']);
+        $logger->error($msg, ['app' => 'vapor']);
     }
 
     public static function log($msg, $file = "/tmp/nc.log")
@@ -381,7 +381,7 @@ class Helper
         $sites = [];
         foreach ($files as $file) {
             $basename = File::getBasename($file);
-            $namespace = 'OCA\\NCDownloader\\Search\\Sites\\';
+            $namespace = 'OCA\\Vapor\\Search\\Sites\\';
             $className = $namespace . $basename;
             if (in_array(searchInterface::class, class_implements($className))) {
                 $sites[] = ['class' => $className, 'name' => $basename];
@@ -529,7 +529,7 @@ public static function getLocalFolder(string $path): string
             'dir' => $realDownloadDir,
             'torrentsDir' => $torrentsDir,
             'confDir' => $aria2Dir,
-            'token' =>  $token ? $token : "ncdownloader123",
+            'token' =>  $token ? $token : "vapor123",
             'settings' => $options,
             'rpcHost' => $rpcHost ? $rpcHost : "127.0.0.1",
             'rpcPort' => $rpcPort ? $rpcPort : "6800",
@@ -543,9 +543,9 @@ public static function getLocalFolder(string $path): string
 
     public static function getAppPath(): string
     {
-	// return \OC::$server->getAppManager()->getAppPath('ncdownloader');
+	// return \OC::$server->getAppManager()->getAppPath('vapor');
 	// BEGIN STEVE EDITS
-        return \OC::$server->get(\OCP\App\IAppManager::class)->getAppPath('ncdownloader');
+        return \OC::$server->get(\OCP\App\IAppManager::class)->getAppPath('vapor');
         // END STEVE EDITS
     }
     public static function folderUpdated(string $dir): bool
@@ -636,7 +636,7 @@ public static function getLocalFolder(string $path): string
                 "label" => "Aria2 RPC Token",
                 "id" => "ncd_aria2_rpc_token",
                 "value" => $data['ncd_aria2_rpc_token'] ?? "",
-                "placeholder" => $data['ncd_aria2_rpc_token'] ?? "ncdownloader123",
+                "placeholder" => $data['ncd_aria2_rpc_token'] ?? "vapor123",
                 "path" => $data['path'],
             ],
             [

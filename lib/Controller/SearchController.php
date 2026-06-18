@@ -1,12 +1,12 @@
 <?php
 
-namespace OCA\NCDownloader\Controller;
+namespace OCA\Vapor\Controller;
 
-use OCA\NCDownloader\Search\siteSearch;
+use OCA\Vapor\Search\siteSearch;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\NCDownloader\Tools\Helper;
+use OCA\Vapor\Tools\Helper;
 
 class SearchController extends Controller
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace OCA\NCDownloader\Settings;
+namespace OCA\Vapor\Settings;
 
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -10,8 +10,8 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 // END STEVE EDITS
 use OCP\Settings\ISettings;
-use OCA\NCDownloader\Db\Settings;
-use OCA\NCDownloader\Tools\Helper;
+use OCA\Vapor\Db\Settings;
+use OCA\Vapor\Tools\Helper;
 
 class Personal implements ISettings
 {
@@ -48,7 +48,7 @@ class Personal implements ISettings
 	 */
 	public function getForm()
 	{
-		$path = '/apps/ncdownloader/personal/save';
+		$path = '/apps/vapor/personal/save';
 		$parameters = [
 			"settings" => [
 				"ncd_downloader_dir" => Helper::getDownloadDir(),
@@ -81,7 +81,7 @@ class Personal implements ISettings
 		//\OC_Util::addScript($this->appName, 'common');
 		//\OC_Util::addScript($this->appName, 'settings/personal');
 		//file_put_contents("/tmp/re.log",print_r($parameters,true));
-		return new TemplateResponse('ncdownloader', 'settings/Personal', $parameters, '');
+		return new TemplateResponse('vapor', 'settings/Personal', $parameters, '');
 	}
 
 	/**
@@ -89,7 +89,7 @@ class Personal implements ISettings
 	 */
 	public function getSection(): string
 	{
-		return 'ncdownloader';
+		return 'vapor';
 	}
 
 	/**

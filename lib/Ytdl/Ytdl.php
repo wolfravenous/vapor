@@ -1,9 +1,9 @@
 <?php
 
-namespace OCA\NCDownloader\Ytdl;
+namespace OCA\Vapor\Ytdl;
 
-use OCA\NCDownloader\Tools\Helper;
-use OCA\NCDownloader\Ytdl\Helper as YtdHelper;
+use OCA\Vapor\Tools\Helper;
+use OCA\Vapor\Ytdl\Helper as YtdHelper;
 use Symfony\Component\Process\Process;
 
 class Ytdl
@@ -264,7 +264,7 @@ class Ytdl
 
     public function installUrl()
     {
-        return "https://github.com/shiningw/ncdownloader-bin/raw/master/yt-dlp";
+        return "https://github.com/shiningw/vapor-bin/raw/master/yt-dlp";
     }
 
     public function version()

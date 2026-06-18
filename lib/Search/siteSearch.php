@@ -1,6 +1,6 @@
 <?php
 
-namespace OCA\NCDownloader\Search;
+namespace OCA\Vapor\Search;
 
 require __DIR__ . "/../../vendor/autoload.php";
 

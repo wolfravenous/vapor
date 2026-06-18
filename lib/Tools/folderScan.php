@@ -1,8 +1,8 @@
 <?php
 
-namespace OCA\NCDownloader\Tools;
+namespace OCA\Vapor\Tools;
 
-use OCA\NCDownloader\Tools\Helper;
+use OCA\Vapor\Tools\Helper;
 //use OC\Files\Utils\Scanner;
 use OCP\Files\IRootFolder;
 use \OCP\EventDispatcher\IEventDispatcher;

@@ -1,6 +1,6 @@
 <?php
 
-namespace OCA\NCDownloader\Search\Sites;
+namespace OCA\Vapor\Search\Sites;
 
 abstract class searchBase
 {
@@ -11,7 +11,7 @@ abstract class searchBase
     protected $searchUrl;
     protected $crawler;
     protected $client;
-    protected $actionLinks = [["name" => 'download', 'path' => '/index.php/apps/ncdownloader/new'], ['name' => 'clipboard']];
+    protected $actionLinks = [["name" => 'download', 'path' => '/index.php/apps/vapor/new'], ['name' => 'clipboard']];
 
     public function getTableTitles(): array
     {

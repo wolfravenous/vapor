@@ -1,9 +1,9 @@
 <?php
 
-namespace OCA\NCDownloader\Controller;
+namespace OCA\Vapor\Controller;
 
-use OCA\NCDownloader\Tools\Helper;
-use OCA\NCDownloader\Db\Settings;
+use OCA\Vapor\Tools\Helper;
+use OCA\Vapor\Db\Settings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

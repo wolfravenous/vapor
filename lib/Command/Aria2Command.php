@@ -1,9 +1,9 @@
 <?php
 
-namespace OCA\NCDownloader\Command;
+namespace OCA\Vapor\Command;
 
-use OCA\NCDownloader\Db\Helper as DbHelper;
-use OCA\NCDownloader\Tools\Helper;
+use OCA\Vapor\Db\Helper as DbHelper;
+use OCA\Vapor\Tools\Helper;
 //use OC\Core\Command\Base;
 use Symfony\Component\Console\Command\Command as Base;
 use Symfony\Component\Console\Input\InputArgument;

@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace OCA\NCDownloader\Tools;
+namespace OCA\Vapor\Tools;
 
 /**
  * Generic executable finder.

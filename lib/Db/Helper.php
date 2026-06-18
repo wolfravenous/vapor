@@ -1,12 +1,12 @@
 <?php
-namespace OCA\NCDownloader\Db;
-use OCA\NCDownloader\Tools\Helper as ToolsHelper;
+namespace OCA\Vapor\Db;
+use OCA\Vapor\Tools\Helper as ToolsHelper;
 
 class Helper
 {
     //@var OC\DB\ConnectionAdapter
     private $conn;
-    private $table = "ncdownloader_info";
+    private $table = "vapor_info";
     private $prefixedTable;
     public $queryBuilder;
 
