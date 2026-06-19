@@ -55,8 +55,6 @@ class Ytdl
         $this->setEnv('LANG', $lang);
         $this->addOption("--no-mtime");
 	$this->addOption('--ignore-errors');
-	$this->addOption('--js-runtimes');
-	$this->addOption('node');
 
         if (($index = $this->hasOption('--output')) !== false) {
             $this->outTpl = $this->options[$index + 1];
@@ -235,7 +233,7 @@ class Ytdl
     }
     public function isInstalled()
     {
-        return @is_file($this->bin);
+        return @file_exists($this->bin);
     }
     public function isExecutable()
     {
@@ -272,7 +270,10 @@ class Ytdl
     public function version()
     {
         $process = new Process([$this->bin, '--version']);
-        $process->run();
+	$process->run();
+	// BEGIN STEVE EDITS
+        \OC::$server->get(\Psr\Log\LoggerInterface::class)->error('VAPOR DEBUG2: cmd=' . $process->getCommandLine() . ' exitcode=' . $process->getExitCode() . ' success=' . ($process->isSuccessful() ? 'yes' : 'no') . ' stdout=' . substr($process->getOutput(), 0, 1000) . ' stderr=' . substr($process->getErrorOutput(), 0, 1000) . ' helperfile=' . ($this->helper->file ?? 'NULL'));
+        // END STEVE EDITS
         if ($process->isSuccessful()) {
             //remove any new line
             return trim($process->getOutput());

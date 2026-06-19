@@ -92,7 +92,8 @@ class YtdlController extends Controller
         }
         //$url = trim($this->request->getParam('text-input-value'));
         $url = trim($url);
-        $yt = $this->ytdl;
+	$yt = $this->ytdl;
+	\OC::$server->get(\Psr\Log\LoggerInterface::class)->error('VAPOR DEBUG: bin=' . $yt->getBin() . ' installed=' . ($yt->isInstalled() ? 'yes' : 'no') . ' executable=' . ($yt->isExecutable() ? 'yes' : 'no') . ' dlDir=' . $dlDir);
         if (in_array($extension, $this->audio_extensions)) {
             $yt->audioOnly = true;
             $yt->audioFormat = $extension;
