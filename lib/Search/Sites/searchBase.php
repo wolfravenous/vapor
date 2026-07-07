@@ -34,7 +34,7 @@ abstract class searchBase
         return $this;
     }
 
-    protected function addActionLinks(array $links = null)
+    protected function addActionLinks(?array $links = null)
     {
         $links = $links ?? $this->actionLinks;
         foreach ($this->rows as $key => &$value) {
