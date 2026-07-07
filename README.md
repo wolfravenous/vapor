@@ -59,16 +59,6 @@ Then navigate to Vapor in your Nextcloud instance and configure your settings.
 
 ---
 
-## Scanning Downloaded Files
-
-After downloading, run this command to make files visible in Nextcloud. Replace `yourusername` and the path with your own:
-
-```bash
-sudo -u www-data php8.3 /var/www/nextcloud/occ files:scan yourusername --path="/yourusername/files/Music"
-```
-
----
-
 ## Updating yt-dlp
 
 If the in-app update button doesn't work, update manually:

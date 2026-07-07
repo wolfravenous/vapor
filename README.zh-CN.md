@@ -59,16 +59,6 @@ sudo -u www-data php8.3 /var/www/nextcloud/occ app:enable vapor
 
 ---
 
-## 扫描已下载的文件
-
-下载完成后，运行以下命令使文件在 Nextcloud 文件管理中可见。请将 `yourusername` 和路径替换为您自己的：
-
-```bash
-sudo -u www-data php8.3 /var/www/nextcloud/occ files:scan yourusername --path="/yourusername/files/Music"
-```
-
----
-
 ## 手动更新 yt-dlp
 
 如果应用内的更新按钮无法正常工作，请手动更新：
