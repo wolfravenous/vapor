@@ -8,7 +8,7 @@ Search for torrents within the app from multiple BT sites;
 Control Aria2 and manage download tasks from the web;
 Download videos from 700+ video sites (youtube,youku,vimo,dailymotion,twitter,facebook and the likes).
     </description>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <licence>AGPL-3.0-or-later</licence>
     <author mail="freefallbenson@gmail.com" homepage="https://github.com/shiningw">jiaxinhuang</author>
     <author mail="wolfravenous@gmail.com" homepage="https://github.com/wolfravenous">wolfravenous</author>
