@@ -2,6 +2,7 @@
 
 - [English](README.md)
 - [简体中文](README.zh-CN.md)
+- [Français](README.fr-FR.md)
 
 Vapor is a Nextcloud app that brings a full-featured download manager directly into your cloud. It provides a clean web interface for Aria2 and yt-dlp, letting you pull content from across the internet straight into your Nextcloud files.
 

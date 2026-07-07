@@ -2,6 +2,7 @@
 
 - [English](README.md)
 - [简体中文](README.zh-CN.md)
+- [Français](README.fr-FR.md)
 
 Vapor 是一款 Nextcloud 应用，将功能完整的下载管理器直接集成到您的云端。它为 Aria2 和 yt-dlp 提供简洁的 Web 界面，让您可以将互联网上的内容直接下载到 Nextcloud 文件中。
 
