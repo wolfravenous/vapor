@@ -5,6 +5,8 @@ namespace OCA\Vapor\Ytdl;
 use OCA\Vapor\Tools\Helper;
 use OCA\Vapor\Ytdl\Helper as YtdHelper;
 use Symfony\Component\Process\Process;
+use OCP\Files\IRootFolder;
+use OCP\IUserSession;
 
 class Ytdl
 {
