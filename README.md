@@ -5,6 +5,8 @@
 
 Vapor is a Nextcloud app that brings a full-featured download manager directly into your cloud. It provides a clean web interface for Aria2 and yt-dlp, letting you pull content from across the internet straight into your Nextcloud files.
 
+Link to app : https://apps.nextcloud.com/apps/vapor
+
 - Search for torrents from multiple BT sites without leaving Nextcloud
 - Control Aria2 and manage all download tasks from the web
 - Download videos and audio from 700+ sites via yt-dlp (YouTube, Dailymotion, Twitter, Facebook and many more)
@@ -20,7 +22,7 @@ Vapor is a Nextcloud app that brings a full-featured download manager directly i
 
 - Nextcloud 32–34
 - PHP 8.3–8.5
-- Ubuntu 22.04 (or compatible Linux distribution)
+- Ubuntu 22.04, Debian 12-13 (or compatible Linux distribution)
 - Command line access with sudo
 - aria2 installed on the server
 

@@ -5,6 +5,8 @@
 
 Vapor 是一款 Nextcloud 应用，将功能完整的下载管理器直接集成到您的云端。它为 Aria2 和 yt-dlp 提供简洁的 Web 界面，让您可以将互联网上的内容直接下载到 Nextcloud 文件中。
 
+应用链接 : https://apps.nextcloud.com/apps/vapor
+
 - 无需离开 Nextcloud，即可从多个 BT 站点搜索种子
 - 通过 Web 界面控制 Aria2 并管理所有下载任务
 - 借助 yt-dlp 的强大功能，从 700 多个网站下载音视频文件（YouTube、优酷、Dailymotion、Twitter、Facebook 等）
@@ -20,7 +22,7 @@ Vapor 是一款 Nextcloud 应用，将功能完整的下载管理器直接集成
 
 - Nextcloud 32–34
 - PHP 8.3–8.5
-- Ubuntu 22.04（或兼容的 Linux 发行版）
+- Ubuntu 22.04, Debian 12-13 （或兼容的 Linux 发行版）
 - 具有 sudo 权限的命令行访问
 - 服务器上已安装 aria2
 
