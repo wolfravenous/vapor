@@ -36,7 +36,7 @@ Lien de l'application : https://apps.nextcloud.com/apps/vapor
 sudo apt install aria2
 ```
 
-**2. Activez l'application via l'App Store de Nextcloud ** (recherche de "Vapor"), ou cloner manuellement:
+**2. Activez l'application via l'App Store de Nextcloud** (recherche de "Vapor"), ou cloner manuellement:
 ```bash
 cd /var/www/nextcloud/apps
 sudo git clone https://github.com/wolfravenous/vapor.git
