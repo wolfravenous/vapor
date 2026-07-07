@@ -162,8 +162,36 @@ class Ytdl
                 $this->onOutput($buffer, $data);
             }
         });
+        
         if ($process->isSuccessful()) {
-		$this->helper->updateStatus(Helper::STATUS['COMPLETE']);
+            $this->helper->updateStatus(Helper::STATUS['COMPLETE']);
+        
+            // === Save in Nextcloud immediatly ===
+            if ($this->helper->file) {
+                try {
+                    $user = \OC::$server->get(IUserSession::class)->getUser();
+                    if ($user) {
+                        $userId = $user->getUID();
+                        $rootFolder = \OC::$server->get(IRootFolder::class);
+                        $userFolder = $rootFolder->getUserFolder($userId);
+                        // relative path files for user 
+                        // $this->dbDlPath is by example "/Downloads"
+                        $relativePath = ($this->dbDlPath ? ltrim($this->dbDlPath, '/') . '/' : '') . $this->helper->file;
+                        $storage = $userFolder->getStorage();
+                        $scanner = $storage->getScanner();
+                        // Scan only this file
+                        $scanner->scan('files/' . $relativePath, true);
+                    }
+                } catch (\Exception $e) {
+                    // In case of error (missing file, permissions), dont stop
+                    \OC::$server->get(\Psr\Log\LoggerInterface::class)->error(
+                        'Vapor: Failed to scan newly downloaded file: ' . $e->getMessage(),
+                        ['app' => 'vapor']
+                    );
+                }
+            }
+            // =========================================================
+        
             // BEGIN STEVE EDITS
             if ($this->helper->alreadyDownloaded) {
                 return [
