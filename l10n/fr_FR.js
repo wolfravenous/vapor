@@ -206,6 +206,7 @@ OC.L10N.register(
     "Add Options" : "Ajouter des options",
     "Custom Youtube-dl Settings" : "Paramètres Youtube-dl personnalisés",
     "Disable BT for non-admin users" : "Désactiver BT pour les utilisateurs non-admin",
-    "No update available" : "Pas de mise à jour"
+    "No update available" : "Pas de mise à jour",
+    "Check for Update" : "Vérifier la mise à jour"
 },
 "nplurals:2; plural:(n > 1);");
