@@ -205,6 +205,7 @@ OC.L10N.register(
     "Custom Aria2 Settings" : "Paramètres Aria2 personnalisés",
     "Add Options" : "Ajouter des options",
     "Custom Youtube-dl Settings" : "Paramètres Youtube-dl personnalisés",
-    "Disable BT for non-admin users" : "Désactiver BT pour les utilisateurs non-admin"
+    "Disable BT for non-admin users" : "Désactiver BT pour les utilisateurs non-admin",
+    "No update available" : "Pas de mise à jour"
 },
 "nplurals:2; plural:(n > 1);");

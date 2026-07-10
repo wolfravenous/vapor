@@ -7,6 +7,7 @@ use OCA\Vapor\Ytdl\Helper as YtdHelper;
 use Symfony\Component\Process\Process;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
+use OCP\IL10N;
 
 class Ytdl
 {
@@ -24,9 +25,11 @@ class Ytdl
     private $bin;
     private $cmd;
     public $helper;
+    private $l10n;
 
-    public function __construct(array $options)
+    public function __construct(array $options, IL10N $l10n)
     {
+        $this->l10n = $l10n;
         $options += ['downloadDir' => '/tmp/downloads', 'settings' => []];
         $this->init($options);
     }
@@ -324,7 +327,8 @@ class Ytdl
                 return ['status' => true, 'message' => $tagName];
             }
         }
-        return ['status' => false, 'message' => 'No update available'];
+//        return ['status' => false, 'message' => 'No update available'];
+        return ['status' => false, 'message' => $this->l10n->t("No update available")];
     }
     public function update()
     {

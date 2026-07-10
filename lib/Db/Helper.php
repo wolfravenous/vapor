@@ -86,12 +86,7 @@ class Helper
             ->where('gid = :gid')
             ->setParameter('gid', $gid)
             ->executeQuery();
-        // Compatibility fix for different Nextcloud versions
-        if (method_exists($queryBuilder, 'fetchAssociative')) {
-            return $queryBuilder->fetchAssociative();
-        } else {
-            return $queryBuilder->fetch();
-        }
+        return $queryBuilder->fetchAssociative();
     }
 
     public function save(array $keys, $values = array(), $conditions = array())
