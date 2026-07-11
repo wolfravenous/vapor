@@ -9624,7 +9624,7 @@
             return (
               n.appendChild(this._createInput(o)),
               (o.id = t),
-              (o.placeholder = "Leave empty if no value needed"),
+              (o.placeholder = OC.L10N.translate('vapor','Leave empty if no value needed')),
               n.appendChild(this._createInput(o)),
               n.appendChild(this._createCancelBtn()),
               n
@@ -9802,7 +9802,7 @@
               let i = [];
               for (let e in o) this.validOptions.includes(e) || i.push(e);
               i.length > 0
-                ? f.error("invalid options: " + i.join(","))
+                ? f.error(OC.L10N.translate('vapor','invalid options: ') + i.join(","))
                 : f
                     .httpClient(r)
                     .setData(o)
@@ -9878,11 +9878,11 @@
                                 (e) => i.newOption(e, n.name),
                                 ["prevent"],
                               )),
-                            "data-tippy-content": "Add new options",
+                            "data-tippy-content": OC.L10N.translate('vapor','Add new options'),
                           },
                           [
                             Xr(e.$slots, "add", {}, () => [
-                              t[2] || (t[2] = vs("New Option", -1)),
+                              t[2] || (t[2] = vs(OC.L10N.translate('vapor','New Option'), -1)),
                             ]),
                           ],
                         ),
@@ -10161,7 +10161,7 @@
                           {
                             key: 0,
                             type: "button",
-                            value: "save",
+                            value: OC.L10N.translate('vapor','save'),
                             "data-rel": r.container,
                             onClick:
                               t[1] ||
@@ -10952,7 +10952,7 @@
                   null,
                   [
                     fs("div", cl, [
-                      t[0] || (t[0] = fs("h3", null, "General Settings", -1)),
+                      t[0] || (t[0] = fs("h3", null, OC.L10N.translate('vapor','General Settings'), -1)),
                       (os(!0),
                       as(
                         Xi,
@@ -10988,7 +10988,7 @@
                           {
                             key: 0,
                             name: "custom-aria2-settings",
-                            title: "Personal Aria2 Settings",
+                            title: OC.L10N.translate('vapor','Personal Aria2 Settings'),
                             onMounted: i.renderAria2,
                             path: "/apps/vapor/personal/aria2/save",
                             validOptions: r.aria2Options,
@@ -10996,7 +10996,7 @@
                           {
                             save: pr(() => [
                               ...(t[1] ||
-                                (t[1] = [vs("Save Aria2 Settings", -1)])),
+                                (t[1] = [vs(OC.L10N.translate('vapor','Save Aria2 Settings'), -1)])),
                             ]),
                             _: 1,
                           },
@@ -11008,7 +11008,7 @@
                       a,
                       {
                         name: "custom-ytdl-settings",
-                        title: "Personal YouTube-dl Settings",
+                        title: OC.L10N.translate('vapor','Personal YouTube-dl Settings'),
                         onMounted: i.renderYtdl,
                         path: "/apps/vapor/personal/ytdl/save",
                         validOptions: r.ytdlOptions,
@@ -11016,7 +11016,7 @@
                       {
                         save: pr(() => [
                           ...(t[2] ||
-                            (t[2] = [vs("Save Youtube-dl Settings", -1)])),
+                            (t[2] = [vs(OC.L10N.translate('vapor','Save Youtube-dl Settings'), -1)])),
                         ]),
                         _: 1,
                       },
