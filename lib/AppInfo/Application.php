@@ -63,7 +63,6 @@ class Application extends App implements IBootstrap
         });
 
         $context->registerService(Settings::class, function (ContainerInterface $c) use ($uid) {
-            $l10n = $c->get(IL10N::class);
             return new Settings($uid);
         });
         $context->registerService('uid', function (ContainerInterface $c) use ($uid) {

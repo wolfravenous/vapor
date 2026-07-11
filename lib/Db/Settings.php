@@ -7,6 +7,7 @@ namespace OCA\Vapor\Db;
 //use OC\AllConfig;
 use OCP\IConfig;
 //END STEVE CODE
+use OCP\IL10N;
 
 class Settings
 {
@@ -23,6 +24,7 @@ class Settings
     //type of settings (system = 1 or app =2)
     private $type;
     private static $instance = null;
+    private $l10n;
     public const TYPE = ['SYSTEM' => 1, 'USER' => 2, 'APP' => 3];
     public function __construct($user = null)
     {
@@ -33,6 +35,7 @@ class Settings
         $this->appName = 'vapor';
         $this->type = self::TYPE['USER'];
         $this->user = $user;
+        $this->l10n = \OC::$server->getL10N('vapor');
         //$this->allConfig = new AllConfig($this->sysConfig);
         //$this->connAdapter = \OC::$server->getDatabaseConnection();
         //$this->conn = $this->connAdapter->getInner();
@@ -94,7 +97,7 @@ class Settings
         } catch (\Exception $e) {
             return ['error' => $e->getMessage()];
         }
-        return ['message' => "Saved!"];
+        return ['message' => $this->l10n->t("Saved!")];
 
     }
     public function getAllAppValues()
