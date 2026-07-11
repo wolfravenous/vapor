@@ -207,6 +207,18 @@ OC.L10N.register(
     "Custom Youtube-dl Settings" : "Paramètres Youtube-dl personnalisés",
     "Disable BT for non-admin users" : "Désactiver BT pour les utilisateurs non-admin",
     "No update available" : "Pas de mise à jour",
-    "Check for Update" : "Vérifier la mise à jour"
+    "Check for Update" : "Vérifier la mise à jour",
+    "General Settings" : "Paramètres généraux",
+    "Downloads Folder : " : "Dossier de téléchargement : ",
+    "Torrents Folder : " : "Dossier des torrents : ",
+    "Personal Aria2 Settings" : "Paramètres personnels Aria2",
+    "Save Aria2 Settings" : "Sauvegarder les paramètres Aria2",
+    "Personal YouTube-dl Settings" : "Paramètres personnels Yt-dlp",
+    "Save Youtube-dl Settings" : "Sauvegarder les paramètres Yt-dlp",
+    "Add new options" : "Ajouter une nouvelle option",
+    "New Option" : "Nouvelle option",
+    "save" : "Sauvegarder",
+    "Leave empty if no value needed" : "Laisser vide si aucune valeur requise",
+    "invalid options: " : "Option invalide: "
 },
 "nplurals:2; plural:(n > 1);");
