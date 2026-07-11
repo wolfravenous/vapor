@@ -219,6 +219,7 @@ OC.L10N.register(
     "New Option" : "Nouvelle option",
     "save" : "Sauvegarder",
     "Leave empty if no value needed" : "Laisser vide si aucune valeur requise",
-    "invalid options: " : "Option invalide: "
+    "invalid options: " : "Option invalide: ",
+    "Saved!" : "Sauvegardé !"
 },
 "nplurals:2; plural:(n > 1);");
