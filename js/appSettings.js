@@ -10459,7 +10459,7 @@
                         (t[2] = fs(
                           "h2",
                           { class: "section-title" },
-                          "System Info",
+                          OC.L10N.translate('vapor','System Info'),
                           -1,
                         )),
                       fs("div", Xa, [
@@ -10602,8 +10602,8 @@
                         a,
                         {
                           defaultStatus: r.pStatus,
-                          disabledText: "No Aria2 Settings for non-admin Users",
-                          enabledText: "No Aria2 Settings for non-admin Users",
+                          disabledText: OC.L10N.translate('vapor','No Aria2 Settings for non-admin Users'),
+                          enabledText: OC.L10N.translate('vapor','No Aria2 Settings for non-admin Users'),
                           onChanged: i.toggle,
                           name: "disallow_aria2_settings",
                         },
@@ -10617,13 +10617,13 @@
                       {
                         name: "admin-aria2-settings",
                         onMounted: i.render,
-                        title: "Global Aria2 Settings",
+                        title: OC.L10N.translate('vapor','Global Aria2 Settings'),
                         path: "/apps/vapor/admin/aria2/save",
                         validOptions: r.validOptions,
                       },
                       {
                         save: pr(() => [
-                          ...(t[0] || (t[0] = [vs("Save Settings", -1)])),
+                          ...(t[0] || (t[0] = [vs(OC.L10N.translate('vapor','Save Settings'), -1)])),
                         ]),
                         _: 1,
                       },
