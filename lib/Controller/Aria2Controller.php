@@ -169,6 +169,32 @@ class Aria2Controller extends Controller
         if (isset($resp['error'])) {
             return new JSONResponse($resp);
         }
+
+        // === Automatic scan for completed downloads when user views the list ===
+        if (strtolower($path) === 'complete' && !empty($resp) && !isset($resp['error'])) {
+            foreach ($resp as $item) {
+                $filename = null;
+                if (isset($item['files'][0]['path'])) {
+                    $filename = basename($item['files'][0]['path']);
+                }
+                if (!$filename) {
+                    continue;
+                }
+                $dlDir = Helper::getDownloadDir(); // e.g., "/Downloads"
+                $relativePath = ltrim($dlDir, '/') . '/' . $filename;
+                try {
+                    if (!$this->userFolder->nodeExists($relativePath)) {
+                        $storage = $this->userFolder->getStorage();
+                        $scanner = $storage->getScanner();
+                        $scanner->scan('files/' . $relativePath, true);
+                    }
+                } catch (\Exception $e) {
+                    // Ignore silently; the file might not be fully written yet
+                }
+            }
+        }
+        // ================================================================
+
         $data = $this->transformResp($resp);
         $data['counter'] = $counter;
         return new JSONResponse($data);
