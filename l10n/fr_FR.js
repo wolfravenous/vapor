@@ -220,6 +220,24 @@ OC.L10N.register(
     "save" : "Sauvegarder",
     "Leave empty if no value needed" : "Laisser vide si aucune valeur requise",
     "invalid options: " : "Option invalide: ",
-    "Saved!" : "Sauvegardé !"
+    "Saved!" : "Sauvegardé !",
+    "Enable BT for non-admin users" : "Activer BT pour les utilisateurs non-admin (actuellement désactivé)",
+    "Disable BT for non-admin users" : "Désactiver BT pour les utilisateurs non-admin (actuellement activé)",
+    "No Aria2 Settings for non-admin Users" : "Pas de paramètres Aria2 pour les utilisateurs non-admin",
+    "Global Aria2 Settings" : "Paramètres Globaux Aria2",
+    "System Info" : "Informations système",
+    "Aria2 RPC Host" : "Hôte RPC Aria2",
+    "Aria2 RPC Port" : "Port RPC Aria2",
+    "Aria2 RPC Token" : "Clé (token) RPC Aria2",
+    "Yt-dlp binary" : "Binaire Yt-dlp",
+    "Aria2c binary" : "Binaire Aria2c",
+    "Save Settings" : "Sauvegarder les options",
+    "Search" : "Chercher",
+    "Download" : "Télécharger",
+    "title" : "titre",
+    "seeders" : "seeders",
+    "info" : "infos",
+    "actions" : "actions"
+
 },
 "nplurals:2; plural:(n > 1);");
