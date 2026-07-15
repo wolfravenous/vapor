@@ -72,6 +72,7 @@ class MainController extends Controller
         //$config = \OC::$server->getAppConfig();
         Util::addInitScript($this->appName, 'app');
         OC_Util::addStyle($this->appName, 'app');
+        Util::addScript($this->appName, 'navigationToggle');
 
         $params = $this->buildParams();
         $response = new TemplateResponse($this->appName, 'Index', $params);
