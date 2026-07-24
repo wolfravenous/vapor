@@ -16,7 +16,13 @@ abstract class searchBase
     public function getTableTitles(): array
     {
         if (empty($this->tableTitles)) {
-            return ['title', 'seeders', 'info', 'actions'];
+            $l10n = \OC::$server->getL10N('vapor');
+            return [
+                $l10n->t('title'),
+                $l10n->t('seeders'),
+                $l10n->t('info'),
+                $l10n->t('actions'),
+            ];
         }
         return $this->tableTitles;
     }

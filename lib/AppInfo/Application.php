@@ -13,6 +13,7 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Symfony\Component\DomCrawler\Crawler;
 use Psr\Container\ContainerInterface;
+use OCP\IL10N;
 
 class Application extends App implements IBootstrap
 {
@@ -57,7 +58,8 @@ class Application extends App implements IBootstrap
         });
         $context->registerService(Ytdl::class, function (ContainerInterface $c) use ($uid) {
             $config = Helper::getYtdlConfig($uid);
-            return new Ytdl($config);
+            $l10n = $c->get(IL10N::class);
+            return new Ytdl($config, $l10n);
         });
 
         $context->registerService(Settings::class, function (ContainerInterface $c) use ($uid) {

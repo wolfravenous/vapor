@@ -15,6 +15,7 @@ use Psr\Log\LoggerInterface;
 use OCA\Vapor\Aria2\Aria2;
 use OCA\Vapor\Ytdl\Ytdl;
 use OCA\Vapor\Http\Client;
+use OCP\IL10N;
 
 require __DIR__ . "/../../vendor/autoload.php";
 
@@ -617,37 +618,38 @@ public static function getLocalFolder(string $path): string
 
     public static function getAdminOptions($data)
     {
+        $l10n = \OC::$server->getL10N('vapor');
         $options = [
             [
-                "label" => "Aria2 RPC Host",
+                "label" => $l10n->t("Aria2 RPC Host"),
                 "id" => "ncd_aria2_rpc_host",
                 "value" => $data['ncd_aria2_rpc_host'] ?? "",
                 "placeholder" => $data['ncd_aria2_rpc_host'] ?? "127.0.0.1",
                 "path" => $data['path'],
             ],
             [
-                "label" => "Aria2 RPC Port",
+                "label" => $l10n->t("Aria2 RPC Port"),
                 "id" => "ncd_aria2_rpc_port",
                 "value" => $data['ncd_aria2_rpc_port'] ?? "",
                 "placeholder" => $data['ncd_aria2_rpc_port'] ?? 6800,
                 "path" => $data['path'],
             ],
             [
-                "label" => "Aria2 RPC Token",
+                "label" => $l10n->t("Aria2 RPC Token"),
                 "id" => "ncd_aria2_rpc_token",
                 "value" => $data['ncd_aria2_rpc_token'] ?? "",
                 "placeholder" => $data['ncd_aria2_rpc_token'] ?? "vapor123",
                 "path" => $data['path'],
             ],
             [
-                "label" => "Youtube-dl binary",
+                "label" => $l10n->t("Yt-dlp binary"),
                 "id" => "ncd_yt_binary",
                 "value" => $data['ncd_yt_binary'] ?? "",
-                "placeholder" => $data['ncd_yt_binary'] ?? "/usr/bin/youtube-dl",
+                "placeholder" => $data['ncd_yt_binary'] ?? "/usr/bin/yt-dlp",
                 "path" => $data['path'],
             ],
             [
-                "label" => "Aria2c binary",
+                "label" => $l10n->t("Aria2c binary"),
                 "id" => "ncd_aria2_binary",
                 "value" => $data['ncd_aria2_binary'] ?? "",
                 "placeholder" => $data['ncd_aria2_binary'] ?? "/usr/bin/aria2c",

@@ -12,6 +12,8 @@ use OCP\IUserSession;
 use OCP\Settings\ISettings;
 use OCA\Vapor\Db\Settings;
 use OCA\Vapor\Tools\Helper;
+use OCP\IL10N;
+
 
 class Personal implements ISettings
 {
@@ -24,14 +26,16 @@ class Personal implements ISettings
 	private $config;
 	private $uid;
 	private $settings;
+        private $l10n;
 
 	public function __construct(
 		IDBConnection $connection,
 		ITimeFactory $timeFactory,
 		IConfig $config,
 		// BEGIN STEVE EDITS
-		IUserSession $userSession
+		IUserSession $userSession,
 		// END STEVE EDITS
+                IL10N $l10n
 	) {
 		$this->connection = $connection;
 		$this->timeFactory = $timeFactory;
@@ -41,6 +45,7 @@ class Personal implements ISettings
 		$this->uid = $userSession->getUser()->getUID();
 		// END STEVE EDITS
 		$this->settings = new Settings($this->uid);
+                $this->l10n = $l10n;
 	}
 
 	/**
@@ -62,14 +67,14 @@ class Personal implements ISettings
 			],
 			"options" => [
 				[
-					"label" => "Downloads Folder ",
+					"label" => $this->l10n->t("Downloads Folder : "),
 					"id" => "ncd_downloader_dir",
 					"value" => Helper::getDownloadDir(),
 					"placeholder" => Helper::getDownloadDir() ?? "/downloads",
 					"path"    => $path,
 				],
 				[
-					"label" => "Torrents Folder",
+					"label" => $this->l10n->t("Torrents Folder : "),
 					"id" => "ncd_torrents_dir",
 					"value" => $this->settings->get("ncd_torrents_dir"),
 					"placeholder" => $this->settings->get("ncd_torrents_dir") ?? "/torrents",

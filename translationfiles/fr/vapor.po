@@ -249,3 +249,7 @@ msgstr ""
 #: /var/www/html/nxcloud/apps/vapor/templates/settings/Personal.php:80
 msgid "Custom Youtube-dl Settings"
 msgstr ""
+
+#: /var/www/html/nxcloud/apps/vapor/lib/Ytdl/Ytdl.php:327
+msgid "No update available"
+msgstr "Pas de mise à jour"
