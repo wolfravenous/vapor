@@ -154,6 +154,18 @@ msgstr ""
 msgid "Select a directory"
 msgstr ""
 
+#: src/components/folderSettings.vue
+msgid "Set Download Folder"
+msgstr ""
+
+#: src/components/folderSettings.vue
+msgid "Choose folder"
+msgstr ""
+
+#: src/index.js templates/Index.php
+msgid "Toggle navigation"
+msgstr ""
+
 #: /var/www/html/nextcloud/apps/vapor/src/table.js:37 js/appSettings.js:2
 #: js/app.js:2 js/appSettings.js:2001 js/app.js:1979
 msgid "No items"
@@ -201,7 +213,7 @@ msgid "Failed Downloads"
 msgstr ""
 
 #: /var/www/html/nextcloud/apps/vapor/templates/Navigation.php:89
-msgid "Youtube-dl Downloads"
+msgid "yt-dlp Downloads"
 msgstr ""
 
 #: /var/www/html/nextcloud/apps/vapor/templates/settings/Admin.php:12

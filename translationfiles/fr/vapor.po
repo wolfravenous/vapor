@@ -145,6 +145,19 @@ msgstr ""
 msgid "Select a directory"
 msgstr ""
 
+#: /var/www/html/nxcloud/apps/vapor/src/components/folderSettings.vue
+msgid "Set Download Folder"
+msgstr "Définir le dossier de téléchargement"
+
+#: /var/www/html/nxcloud/apps/vapor/src/components/folderSettings.vue
+msgid "Choose folder"
+msgstr "Choisir un dossier"
+
+#: /var/www/html/nxcloud/apps/vapor/src/index.js
+#: /var/www/html/nxcloud/apps/vapor/templates/Index.php
+msgid "Toggle navigation"
+msgstr "Afficher ou masquer la navigation"
+
 #: /var/www/html/nxcloud/apps/vapor/src/table.js:37
 msgid "No items"
 msgstr ""
@@ -186,8 +199,8 @@ msgid "Failed Downloads"
 msgstr ""
 
 #: /var/www/html/nxcloud/apps/vapor/templates/Navigation.php:89
-msgid "Youtube-dl Downloads"
-msgstr ""
+msgid "yt-dlp Downloads"
+msgstr "Téléchargements yt-dlp"
 
 #: /var/www/html/nxcloud/apps/vapor/templates/settings/Admin.php:12
 msgid "Aria2 RPC Token"

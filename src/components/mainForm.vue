@@ -11,7 +11,7 @@
         class="ytdl-link option-buttons"
         @click.prevent="whichType('ytdl', $event)"
       >
-        Youtube-dl
+        yt-dlp
       </div>
       <div
         class="search-torrents option-buttons"
@@ -156,9 +156,13 @@ export default {
     height: 100%;
     position: relative;
   }
+  .options-group {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
   .options-group > .option-buttons {
     margin: 0;
-    padding: 10px;
+    padding: 8px 14px;
     outline: 0;
     font-weight: bold;
     font-size: 13px;
@@ -168,15 +172,28 @@ export default {
     white-space: nowrap;
     min-height: 34px;
     width: auto;
+    background-color: var(--color-background-dark, #ededed);
+    color: var(--color-main-text, #222);
+    border: 1px solid var(--color-border, #ccc);
+    border-radius: var(--border-radius-pill, 20px);
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    &:hover,
+    &:focus {
+      background-color: var(--color-primary-element-light, #b8d4e8);
+      color: var(--color-primary-element-text, #fff);
+      border-color: var(--color-primary-element, #0082c9);
+    }
   }
-  .active-button {
-    border: 2px #9a5c8b solid;
+  .options-group > .option-buttons.active-button {
+    background-color: var(--color-primary-element, #0082c9);
+    color: var(--color-primary-element-text, #fff);
+    border-color: var(--color-primary-element, #0082c9);
   }
 
   .action-group {
     flex: 2;
     & > div {
-      border: 1px solid #565687;
+      border: 1px solid var(--color-border, #565687);
       & > div,
       & > select {
         height: 100%;
@@ -186,12 +203,15 @@ export default {
       }
       & > div[class$="-controls-container"] {
         display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
         & div,
         & select {
           height: 100%;
-          color: #181616;
+          color: var(--color-main-text, #181616);
           font-size: medium;
-          background-color: #bdbdcf;
+          background-color: var(--color-background-dark, #bdbdcf);
         }
       }
     }
@@ -202,37 +222,24 @@ export default {
   }
   .download-button.btn-primary,
   .search-button.btn-primary {
-      color: #fff;
-      background-color: #2d3f59;
-      border-color: #1e324f;
-      border-radius: 0%;
+    color: var(--color-primary-element-text, #fff);
+    background-color: var(--color-primary-element, #2d3f59);
+    border-color: var(--color-primary-element, #1e324f);
+    border-radius: 0%;
   }
   .download-button.btn-primary:hover,
   .search-button.btn-primary:hover {
-      background-color: #191a16;
+    background-color: var(--color-primary-element-hover, #191a16);
   }
 
   .magnet-link,
-  .choose-file {
-    background-color: #a0a0ae;
-    border-radius: 15px 0px 0px 15px;
-  }
-
-  .ytdl-link {
-    background-color: #b8b8ca;
-  }
-  .search-torrents {
-    background-color: #d0d0e0;
-  }
-
-  .search-torrents,
+  .choose-file,
   .ytdl-link,
-  .magnet-link,
-  .choose-file {
-    color: #181616;
+  .search-torrents {
+    color: var(--color-main-text, #181616);
   }
   .checkboxes {
-    background-color: #c4c4d9;
+    background-color: var(--color-background-dark, #c4c4d9);
     padding: 5px 1px;
   }
   input,
@@ -252,16 +259,26 @@ export default {
     display: flex;
     flex-flow: column;
     row-gap: 10px;
-    height: $column-height * 3 + 10;
+    height: auto;
 
-    .options-group,
+    .options-group {
+      display: flex;
+      flex-wrap: wrap;
+      width: 100%;
+      height: auto;
+      gap: 6px;
+    }
+
+    .options-group > .option-buttons {
+      flex: 1 1 auto;
+      min-width: calc(33% - 6px);
+      text-align: center;
+    }
+
     .action-group > div {
       display: flex;
       width: 100%;
       height: $column-height;
-    }
-
-    .action-group > div {
       border: 0px;
       flex-flow: column nowrap;
       & > div {
@@ -269,13 +286,35 @@ export default {
       }
       & > div[class$="-controls-container"] {
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
       }
     }
+  }
+}
+@media only screen and (max-width: 600px) {
+  #nc-vue-unified-form {
+    height: auto;
+    row-gap: 8px;
+    padding: 8px;
+
     .options-group {
-      & > button {
-        width: calc(100% / 3);
-      }
+      flex-direction: column;
+      width: 100%;
+      height: auto;
+    }
+    .options-group > .option-buttons {
+      width: 100%;
+      min-width: unset;
+      text-align: center;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .action-group > div {
+      flex-direction: column;
+      width: 100%;
+      height: auto;
     }
   }
 }

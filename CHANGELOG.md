@@ -5,6 +5,14 @@ All notable changes to Vapor will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Port the responsive form and navigation styling used by [MediaFetch](https://github.com/Happyfeet01/mediafetch), including theme-aware mode selectors and a clearer folder picker.
+
+### Fixed
+- Restore the mobile navigation drawer and hamburger toggle on Nextcloud 34. [Issue #12]
+
 ## [1.0.3] - 2026-07-23
 
 ### Changed
@@ -19,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Issue #13]:https://github.com/wolfravenous/vapor/issues/13
 [Issue #14]:https://github.com/wolfravenous/vapor/issues/14
 [Issue #15]:https://github.com/wolfravenous/vapor/issues/15
+[Issue #12]:https://github.com/wolfravenous/vapor/issues/12
 
 
 ## [1.0.2] - 2026-07-08
@@ -77,4 +86,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Database index name collision on fresh install (`gid_index` → `vapor_gid_index`)
 
 [1.0.0]: https://github.com/wolfravenous/vapor/releases/tag/v1.0.0
-

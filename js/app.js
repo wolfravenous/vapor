@@ -7383,7 +7383,7 @@
               );
             },
           ],
-          ["__scopeId", "data-v-071f026e"],
+          ["__scopeId", "data-v-fbc457b0"],
         ]),
         $i = { class: "search-input", id: "nc-vue-search-input" },
         Wi = { class: "search-controls-container" },
@@ -7631,12 +7631,20 @@
           ],
           ["__scopeId", "data-v-dd0fd24c"],
         ]),
-        os = ["data-path"],
+        os = ["data-tippy-content", "data-path", "title", "aria-label"],
         rs = {
           name: "folderSettings",
+          computed: {
+            title() {
+              return (0, r.Tl)("vapor", "Set Download Folder");
+            },
+            buttonLabel() {
+              return (0, r.Tl)("vapor", "Choose folder");
+            },
+          },
           methods: {
             handler(t) {
-              let e = t.target,
+              let e = t.currentTarget,
                 n = e.hasAttribute("data-path")
                   ? e.getAttribute("data-path")
                   : void 0;
@@ -7663,25 +7671,28 @@
               return (
                 ur(),
                 hr(
-                  "div",
+                  "button",
                   {
+                    type: "button",
                     onClick:
                       e[0] ||
                       (e[0] = function () {
                         return i.handler && i.handler(...arguments);
                       }),
                     class: "downloader-folder-settings",
-                    "data-tippy-content": "Set Download Folder",
+                    "data-tippy-content": i.title,
                     "data-path": n.path,
+                    title: i.title,
+                    "aria-label": i.title,
                   },
-                  null,
-                  8,
+                  yn(i.buttonLabel),
+                  9,
                   os,
                 )
               );
             },
           ],
-          ["__scopeId", "data-v-7fcbec17"],
+          ["__scopeId", "data-v-ece6b242"],
         ]),
         ss = {
           inject: ["settings", "search_sites"],
@@ -7798,7 +7809,7 @@
                               ["prevent"],
                             )),
                         },
-                        " Youtube-dl ",
+                        " yt-dlp ",
                       ),
                       xr(
                         "div",
@@ -10697,7 +10708,40 @@
           e.mount("#app-settings-content"),
           t.provide("settings", o));
         let i = t.mount("#vapor-form-wrapper");
-        (f.addVue(i.$options.name, i),
+        f.addVue(i.$options.name, i);
+        const navigationOpenClass = "vapor-navigation-open",
+          navigationToggle = document.getElementById("app-navigation-toggle"),
+          navigation = document.getElementById("app-navigation"),
+          setNavigationOpen = (t) => {
+            (document.body.classList.toggle(navigationOpenClass, t),
+              navigationToggle &&
+                navigationToggle.setAttribute(
+                  "aria-expanded",
+                  t ? "true" : "false",
+                ));
+          };
+        (navigationToggle &&
+          navigation &&
+          (navigationToggle.setAttribute(
+            "aria-label",
+            (0, r.Tl)("vapor", "Toggle navigation"),
+          ),
+          navigationToggle.addEventListener("click", (t) => {
+            (t.preventDefault(),
+              t.stopPropagation(),
+              setNavigationOpen(
+                !document.body.classList.contains(navigationOpenClass),
+              ));
+          }),
+          document.addEventListener("click", (t) => {
+            document.body.classList.contains(navigationOpenClass) &&
+              (navigation.contains(t.target) ||
+                navigationToggle.contains(t.target) ||
+                setNavigationOpen(!1));
+          }),
+          document.addEventListener("keydown", (t) => {
+            "Escape" === t.key && setNavigationOpen(!1);
+          })),
           u("click", "#start-aria2", "button", function (t) {
             let e = t.target;
             if (e.classList.contains("notinstalled")) return;

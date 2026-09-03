@@ -10,7 +10,9 @@ import App from './App';
 import tippy, { delegate } from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
 import settingsBar from './settingsBar';
+const APP_ID = 'vapor';
 const basePath = "/apps/vapor";
+const navigationOpenClass = 'vapor-navigation-open';
 
 
 window.addEventListener('DOMContentLoaded', function () {
@@ -39,6 +41,43 @@ window.addEventListener('DOMContentLoaded', function () {
     app.provide('settings', values);
     let vm = app.mount('#' + container);
     helper.addVue(vm.$options.name, vm);
+
+    // Nextcloud 34 no longer wires the legacy #app-navigation toggle for apps.
+    // Keep Vapor's existing navigation markup and handle the mobile drawer here.
+    const navigationToggle = document.getElementById('app-navigation-toggle');
+    const navigation = document.getElementById('app-navigation');
+
+    const setNavigationOpen = (open) => {
+        document.body.classList.toggle(navigationOpenClass, open);
+        if (navigationToggle) {
+            navigationToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+    };
+
+    if (navigationToggle && navigation) {
+        navigationToggle.setAttribute('aria-label', t(APP_ID, 'Toggle navigation'));
+
+        navigationToggle.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setNavigationOpen(!document.body.classList.contains(navigationOpenClass));
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!document.body.classList.contains(navigationOpenClass)) {
+                return;
+            }
+            if (!navigation.contains(event.target) && !navigationToggle.contains(event.target)) {
+                setNavigationOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                setNavigationOpen(false);
+            }
+        });
+    }
 
     eventHandler.add("click", "#start-aria2", "button", function (e) {
         const path = basePath + "/aria2/start";
@@ -86,7 +125,6 @@ window.addEventListener('DOMContentLoaded', function () {
         { target: '[data-tippy-content]' }
     );
 });
-
 
 
 

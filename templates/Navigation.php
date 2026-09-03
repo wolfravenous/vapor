@@ -5,7 +5,7 @@ $downloadsList = [
     ["name" => "waiting", "label" => "Waiting Downloads", "id" => "waiting-downloads", "path" => "/apps/vapor/status/waiting"],
     ["name" => "fail", "label" => "Failed Downloads", "id" => "failed-downloads", "path" => "/apps/vapor/status/fail"],
     ["name" => "complete", "label" => "Complete Downloads", "id" => "complete-downloads", "path" => "/apps/vapor/status/complete"],
-    ["name" => "ytdl", "label" => "Youtube-dl Downloads", "id" => "ytdl-downloads", "path" => "/apps/vapor/ytdl/get"],
+    ["name" => "ytdl", "label" => "yt-dlp Downloads", "id" => "ytdl-downloads", "path" => "/apps/vapor/ytdl/get"],
 ];
 ?>
 <div id="app-navigation">
@@ -27,7 +27,6 @@ $downloadsList = [
             data-aria2="<?php $aria2_running ? print $l->t('on') : print $l->t('off');?>">
             <?php $aria2_running ? print $l->t('Stop Aria2') : print $l->t('Start Aria2');?>
         </button>
-    </button>
         <?php elseif ($aria2_installed && !$aria2_executable): ?>
         <button type="button" class="icon-power notinstalled" >
             <?php print $l->t("aria2c is installed but not executable");?>

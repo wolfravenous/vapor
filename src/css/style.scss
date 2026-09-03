@@ -10,6 +10,52 @@
 #app-vapor-wrapper {
     width: 100%;
     display: flex;
+    min-height: 100%;
+    border-radius: var(--border-radius-large, 12px);
+    overflow: hidden;
+
+    #app-content,
+    #app-content-wrapper,
+    .vapor-body-wrapper,
+    #vapor-form-wrapper,
+    #vapor-table-wrapper {
+        background: transparent;
+    }
+
+    #app-content {
+        background-color: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    #app-navigation:not(.vue) {
+        border-right: 1px solid var(--color-border, #d8d8d8);
+
+        .app-navigation-new {
+            padding: calc(var(--default-grid-baseline) * 1.5);
+        }
+
+        .app-navigation-new button {
+            border-radius: var(--border-radius-element, 8px);
+            background-color: var(--color-main-background, #fff);
+            color: var(--color-main-text, #222);
+        }
+
+        > ul {
+            padding-top: calc(var(--default-grid-baseline) * 1.5);
+            gap: 2px;
+        }
+
+        .download-queue > a {
+            padding-left: 44px;
+            border-radius: var(--border-radius-element, 8px);
+        }
+
+        .download-queue .number {
+            background-color: var(--color-background-darker, #5f5853);
+            color: var(--color-main-text, #fff);
+        }
+    }
 
     .action-item {
         position: relative;
@@ -51,7 +97,7 @@
         background-image: url('../../img/clippy.svg');
     }
     #vapor-form-wrapper {
-        margin-left: 2px;
+        margin-left: 0;
 
         .form-input-wrapper {
             display  : flex;
@@ -196,12 +242,49 @@
     #vapor-settings-form input[type=text] {
         width: 135px;
     }
+
+    // Nextcloud 34 keeps the legacy #app-navigation mobile CSS but no longer
+    // provides its old toggle behaviour. src/index.js controls this class.
+    body.vapor-navigation-open #app-navigation:not(.vue) {
+        transform: translateX(0);
+        z-index: 1040;
+        box-shadow: 8px 0 24px rgba(0, 0, 0, 0.18);
+    }
 }
 
-/* Counter and link padding overrides for sidebar */
-#app-vapor-wrapper #app-navigation:not(.vue) .app-navigation-entry-utils-counter {
-    padding: 0 1px;
+@media only screen and (max-width: 1020px) {
+    #app-content,
+    #app-content-wrapper {
+        flex: 1 1 auto;
+        margin-left: 0;
+    }
+
+    #app-content {
+        padding: var(--body-padding, 16px);
+        box-sizing: border-box;
+    }
+
+    #app-content-wrapper {
+        padding: var(--body-padding, 16px);
+        box-sizing: border-box;
+    }
 }
-#app-vapor-wrapper > #app-navigation:not(.vue) > ul > li > a {
-    padding: 0 12px 0 34px;
+
+@media only screen and (max-width: 600px) {
+    #app-vapor-wrapper {
+        flex-direction: column;
+    }
+
+    #app-content-wrapper {
+        flex-direction: column;
+    }
+
+    #vapor-form-wrapper .form-input-wrapper {
+        flex-direction: column;
+        row-gap: 5px;
+    }
+
+    #vapor-settings-form input[type=text] {
+        width: 100%;
+    }
 }
