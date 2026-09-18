@@ -7,6 +7,7 @@ use OCA\Vapor\Http\Client;
 use OCA\Vapor\Tools\Helper;
 use OCA\Vapor\Db\Settings;
 use OCA\Vapor\Ytdl\Ytdl;
+use OCA\Vapor\Db\Helper as DbHelper;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IBootContext;
@@ -62,9 +63,14 @@ class Application extends App implements IBootstrap
             return new Ytdl($config, $l10n);
         });
 
+        $context->registerService(\OCA\Vapor\Db\Helper::class, function (ContainerInterface $c) {
+            return new \OCA\Vapor\Db\Helper();
+        });
+
         $context->registerService(Settings::class, function (ContainerInterface $c) use ($uid) {
             return new Settings($uid);
         });
+
         $context->registerService('uid', function (ContainerInterface $c) use ($uid) {
             return $uid;
         });

@@ -2,6 +2,9 @@
 
 return [
     'routes' => [
+		['name' => 'downloads#getByStatus',	'url' => '/api/v2/downloads/{status}',	'verb' => 'GET'],
+		['name' => 'downloads#getAll',		'url' => '/api/v2/downloads',			'verb' => 'GET'],
+		['name' => 'downloads#getCounters',	'url' => '/api/v2/counters',			'verb' => 'GET'],
         ['name' => 'Main#Index', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'Main#Upload', 'url' => '/upload', 'verb' => 'POST'],
         ['name' => 'Main#getCounters', 'url' => '/counters', 'verb' => 'GET'],
