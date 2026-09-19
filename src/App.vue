@@ -1,191 +1,68 @@
 <template>
-  <section v-if="display.download" class="form-section" id="form-section">
-    <mainForm
-      @download="download"
-      @search="search"
-      @uploadfile="uploadFile"
-      :uris="uris"
-    ></mainForm>
-  </section>
+  <div id="app" class="app-container">
+    <Sidebar />
+    <main id="app-content" class="app-content">
+      <router-view />
+    </main>
+  </div>
 </template>
 
-<script>
-import mainForm from "./components/mainForm";
-import toggleButton from "./components/toggleButton";
-import helper from "./utils/helper";
-import { translate as t, translatePlural as n } from "@nextcloud/l10n";
-import Http from "./lib/http";
-import contentTable from "./lib/contentTable";
+<script setup>
+import { inject } from 'vue'
+import Sidebar from './components/Sidebar.vue'
+import { useDownloads } from './stores/downloads'
 
+const settings = inject('settings', {})
+const { fetchCounters } = useDownloads()
 
+// Fetch downloads on app mount
+fetchCounters()
 
-const successCallback = (data, element) => {
-  if (!data) {
-    helper.error(t("vapor", "Something must have gone wrong!"));
-    return;
-  }
-  if (data.hasOwnProperty("error")) {
-    helper.error(t("vapor", data.error));
-  } else if (data.hasOwnProperty("duplicate")) {
-    // BEGIN STEVE EDITS
-    helper._message(t("vapor", data.message), {
-      duration: 15000,
-      backgroundColor: "#1976d2",
-    });
-    // END STEVE EDITS
-  } else if (data.hasOwnProperty("message")) {
-    helper.message(t("vapor", data.message));
-  } else if (data.hasOwnProperty("file")) {
-    helper.message(t("vapor", "Downloading" + " " + data.file));
-  }
-};
-
-export default {
-  name: "mainApp",
-  inject: ["settings"],
-  provide() {
-    return {
-      search_sites: this.settings.search_sites,
-    };
-  },
-  data() {
-    return {
-      display: { download: true, search: false },
-      uris: {
-        ytd_url: helper.generateUrl("/apps/vapor/ytdl/new"),
-        aria2_url: helper.generateUrl("/apps/vapor/new"),
-        search_url: helper.generateUrl("/apps/vapor/search"),
-        upload_url: helper.generateUrl("/apps/vapor/upload"),
-      },
-    };
-  },
-  created() {},
-  methods: {
-    download(event) {
-      let element = event.target;
-      let formWrapper = element.closest("form");
-      let formData = helper.getData(formWrapper);
-      let inputValue = formData["text-input-value"].trim();
-      let message;
-      if (!helper.isURL(inputValue) && !helper.isMagnetURI(inputValue)) {
-        helper.error(t("vapor", inputValue + " is Invalid"));
-        return;
-      }
-      if (formData.type === "ytdl") {
-        formData["extension"] = "";
-
-        if (formData["select-value-extension"] !== "defaultext") {
-          formData["extension"] = formData["select-value-extension"];
-        }
-        message = helper.t("Download task started!");
-        helper.pollingYtdl();
-        helper.setContentTableType("ytdl-downloads");
-      } else {
-        helper.polling();
-        helper.setContentTableType("active-downloads");
-      }
-      if (message) {
-        helper.info(message);
-      }
-      let url = formWrapper.getAttribute("action");
-      formData['url'] = formData["text-input-value"]
-      delete formData["text-input-value"]
-      helper.httpClient(url)
-        .setData(formData)
-        .setHandler(function (data) {
-          successCallback(data, element);
-        })
-        .send();
-    },
-    search(event, vm) {
-      let element = event.target;
-      let formWrapper = element.closest("form");
-      let formData = helper.getData(formWrapper);
-      let inputValue = formData["text-input-value"];
-      if (!inputValue || (inputValue && inputValue.length < 2)) {
-        helper.error(t("vapor", "Please enter valid keyword!"));
-        vm.$data.loading = 0;
-        return;
-      }
-      helper.disablePolling();
-      contentTable.getInstance().loading();
-
-      let url = formWrapper.getAttribute("action");
-      formData['keyword'] = formData["text-input-value"]
-      formData['site'] = formData["select-value-search"]
-      delete formData["text-input-value"]
-      delete formData['select-value-search']
-      
-      helper.httpClient(url)
-        .setData(formData)
-        .setHandler(function (data) {
-          if (data && data.title) {
-            vm.$data.loading = 0;
-            const tableInst = contentTable.getInstance(data.title, data.row);
-            tableInst.actionLink = false;
-            tableInst.rowClass = "table-row-search";
-            tableInst.create();
-          }
-          if (data.error) {
-            helper.resetSearch(vm);
-            helper.error(data.error);
-          }
-        })
-        .send();
-    },
-    uploadFile(event, vm) {
-      let element = event.target;
-      const files = element.files || event.dataTransfer.files;
-      if (files) {
-        let formWrapper = element.closest("form");
-        let url = formWrapper.getAttribute("action");
-        return helper.httpClient(url)
-          .setHandler(function (data) {
-            successCallback(data, element);
-          })
-          .upload(files[0]);
-      }
-      return false;
-    },
-  },
-  components: {
-    mainForm,
-    toggleButton,
-  },
-  mounted() {},
-};
+// Poll for updates every 2 seconds
+setInterval(() => {
+  fetchCounters()
+}, 2000)
 </script>
 
 <style lang="scss">
-@import "css/variables.scss";
-
-#app-content-wrapper {
-  .vapor-form-wrapper {
-    position: relative;
-    width: 100%;
-    top: 0;
-    left: 0;
-  }
-  .vapor-form-wrapper.top-left {
-    width: 100%;
-    top: 0;
-    left: 0;
-  }
-
-  .form-section {
-    width: 100%;
-    display: flex;
-    flex-flow: column;
-    gap: 1.2em;
-  }
+* {
+  box-sizing: border-box;
 }
 
-@media only screen and (max-width: 1024px) {
-  #app-content-wrapper {
-    #vapor-form-wrapper {
-      position: relative;
-      margin: 2px;
-    }
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.app-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+#app-navigation {
+  width: 250px;
+  border-right: 1px solid var(--color-border);
+  background-color: var(--color-background-secondary);
+  overflow-y: auto;
+}
+
+#app-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--color-background-primary);
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  #app-navigation {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
   }
 }
 </style>
