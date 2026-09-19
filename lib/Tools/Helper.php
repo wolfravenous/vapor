@@ -377,14 +377,21 @@ class Helper
 
     public static function findSearchSites($dir, $suffix = 'php'): array
     {
+        $sites = [];
+        if (!is_dir($dir)) {
+            return $sites;
+        }
         $filetool = File::create($dir, $suffix);
         $files = $filetool->scandir();
-        $sites = [];
         foreach ($files as $file) {
             $basename = File::getBasename($file);
             $namespace = 'OCA\\Vapor\\Search\\Sites\\';
             $className = $namespace . $basename;
-            if (in_array(searchInterface::class, class_implements($className))) {
+            if (!class_exists($className)) {
+                continue;
+            }
+            $interfaces = class_implements($className);
+            if (\is_array($interfaces) && \in_array(searchInterface::class, $interfaces, true)) {
                 $sites[] = ['class' => $className, 'name' => $basename];
             }
         }
@@ -400,14 +407,25 @@ class Helper
         // END STEVE EDITS
         if ($memcache->hasKey($key)) {
             $sites = $memcache->get($key);
-        } else {
-            try {
-                $sites = Helper::findSearchSites(__DIR__ . "/../Search/Sites/");
-                $memcache->set($key, $sites, 300);
-            } catch (\Exception $e) {
-                self::debug($e->getMessage());
+            // The cache can return null (expiry, corrupt value)
+            if (\is_array($sites)) {
+                return $sites;
             }
         }
+
+        $sites = [];
+        try {
+            $sites = Helper::findSearchSites(__DIR__ . '/../Search/Sites/');
+            if (!\is_array($sites)) {
+                $sites = [];
+            }
+            $memcache->set($key, $sites, 300);
+        } catch (\Throwable $e) {
+            // Catch Throwable instead of Exception: also covers Error (TypeError, etc.)
+            self::debug($e->getMessage());
+            $sites = [];
+        }
+
         return $sites;
     }
 
