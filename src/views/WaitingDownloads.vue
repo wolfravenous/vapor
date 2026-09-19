@@ -38,13 +38,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
 
-const { fetchDownloads } = useDownloads()
+const { downloads, fetchDownloads } = useDownloads()
 const loading = ref(true)
-const downloads = ref([])
+const displayDownloads = ref([])
+let pollInterval = null
 
 const resumeDownload = (gid) => {
   console.log('Resume download:', gid)
@@ -56,12 +57,34 @@ const cancelDownload = (gid) => {
   // TODO: Implement cancel functionality
 }
 
-onMounted(async () => {
+const loadDownloads = async () => {
   loading.value = true
-  await fetchDownloads('waiting')
-  // TODO: Get downloads from store
-  downloads.value = []
-  loading.value = false
+  try {
+    await fetchDownloads('waiting')
+    displayDownloads.value = downloads.value.waiting || []
+  } catch (error) {
+    console.error('Failed to load waiting downloads:', error)
+    displayDownloads.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  // Load initial data
+  await loadDownloads()
+  
+  // Poll for updates every 2 seconds
+  pollInterval = setInterval(async () => {
+    await fetchDownloads('waiting')
+    displayDownloads.value = downloads.value.waiting || []
+  }, 2000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
 })
 </script>
 

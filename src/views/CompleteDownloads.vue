@@ -45,13 +45,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
 
-const { fetchDownloads } = useDownloads()
+const { downloads, fetchDownloads } = useDownloads()
 const loading = ref(true)
-const downloads = ref([])
+const displayDownloads = ref([])
+let pollInterval = null
 
 const formatBytes = (bytes) => {
   if (!bytes) return '0 B'
@@ -71,12 +72,34 @@ const deleteDownload = (gid) => {
   // TODO: Implement delete functionality
 }
 
-onMounted(async () => {
+const loadDownloads = async () => {
   loading.value = true
-  await fetchDownloads('complete')
-  // TODO: Get downloads from store
-  downloads.value = []
-  loading.value = false
+  try {
+    await fetchDownloads('complete')
+    displayDownloads.value = downloads.value.complete || []
+  } catch (error) {
+    console.error('Failed to load complete downloads:', error)
+    displayDownloads.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  // Load initial data
+  await loadDownloads()
+  
+  // Poll for updates every 2 seconds
+  pollInterval = setInterval(async () => {
+    await fetchDownloads('complete')
+    displayDownloads.value = downloads.value.complete || []
+  }, 2000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
 })
 </script>
 

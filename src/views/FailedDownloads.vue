@@ -42,13 +42,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
 
-const { fetchDownloads } = useDownloads()
+const { downloads, fetchDownloads } = useDownloads()
 const loading = ref(true)
-const downloads = ref([])
+const displayDownloads = ref([])
+let pollInterval = null
 
 const retryDownload = (gid) => {
   console.log('Retry download:', gid)
@@ -60,12 +61,34 @@ const deleteDownload = (gid) => {
   // TODO: Implement delete functionality
 }
 
-onMounted(async () => {
+const loadDownloads = async () => {
   loading.value = true
-  await fetchDownloads('failed')
-  // TODO: Get downloads from store
-  downloads.value = []
-  loading.value = false
+  try {
+    await fetchDownloads('failed')
+    displayDownloads.value = downloads.value.failed || []
+  } catch (error) {
+    console.error('Failed to load failed downloads:', error)
+    displayDownloads.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  // Load initial data
+  await loadDownloads()
+  
+  // Poll for updates every 2 seconds
+  pollInterval = setInterval(async () => {
+    await fetchDownloads('failed')
+    displayDownloads.value = downloads.value.failed || []
+  }, 2000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
 })
 </script>
 

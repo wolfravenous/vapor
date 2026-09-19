@@ -46,13 +46,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
 
-const { fetchDownloads } = useDownloads()
+const { downloads, fetchDownloads } = useDownloads()
 const loading = ref(true)
-const downloads = ref([])
+const displayDownloads = ref([])
+let pollInterval = null
 
 const formatBytes = (bytes) => {
   if (!bytes) return '0 B'
@@ -72,24 +73,35 @@ const cancelDownload = (gid) => {
   // TODO: Implement cancel functionality
 }
 
-onMounted(async () => {
+const loadDownloads = async () => {
   loading.value = true
-  await fetchDownloads('active')
-  // TODO: Get downloads from store
-  downloads.value = [
-    // Mock data for now
-    {
-      gid: '1',
-      filename: 'example.mp4',
-      tool: 'aria2',
-      status: 'active',
-      progress: 45,
-      totalSize: 1024000000,
-      completedSize: 460800000,
-      speed: 5242880
-    }
-  ]
-  loading.value = false
+  try {
+    await fetchDownloads('active')
+    displayDownloads.value = downloads.value.active || []
+  } catch (error) {
+    console.error('Failed to load active downloads:', error)
+    displayDownloads.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  // Load initial data
+  await loadDownloads()
+  
+  // Poll for updates every 2 seconds
+  pollInterval = setInterval(async () => {
+    await fetchDownloads('active')
+    displayDownloads.value = downloads.value.active || []
+  }, 2000)
+})
+
+onUnmounted(() => {
+  // Clean up interval on component unmount
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
 })
 </script>
 
