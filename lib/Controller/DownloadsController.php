@@ -480,33 +480,3 @@ class DownloadsController extends Controller
             );
         }
     }
-            if (!$this->userId) {
-
-                return new JSONResponse(
-                    ['error' => 'User not authenticated'],
-                    \OCP\AppFramework\Http::STATUS_UNAUTHORIZED
-                );
-            }
-
-            $result = $this->aria2->unpause($gid);
-            if ($result && isset($result['result'])) {
-                return new JSONResponse([
-                    'status' => 'success',
-                    'message' => 'Download resumed'
-                ]);
-            }
-
-            return new JSONResponse(
-                ['error' => 'Failed to resume download'],
-                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => $e->getMessage()],
-                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-}
-
-
