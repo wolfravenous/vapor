@@ -18,6 +18,24 @@
     <div v-if="error" class="aria2-error">
       {{ error }}
     </div>
+
+    <div v-if="isAdmin" class="bt-toggle-section">
+      <div class="bt-toggle">
+        <label class="bt-label">
+          <input 
+            type="checkbox" 
+            v-model="disableBtNonAdmin"
+            @change="toggleDisableBt"
+            class="bt-checkbox"
+          />
+          <span class="bt-text">{{ t('vapor', 'Disable BitTorrent for non-admin users') }}</span>
+        </label>
+        <p class="bt-description">{{ t('vapor', 'When enabled, only administrators can download via magnet links and torrent files') }}</p>
+      </div>
+      <div v-if="btError" class="aria2-error">
+        {{ btError }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -31,11 +49,18 @@ const aria2Status = ref('unknown')
 const loading = ref(false)
 const error = ref(null)
 const isAdmin = ref(false)
+const disableBtNonAdmin = ref(false)
+const btError = ref(null)
 
 onMounted(() => {
   // Check if user is admin
   if (settings && settings.settings) {
     isAdmin.value = settings.settings.is_admin || false
+    
+    // Load BT setting if admin
+    if (isAdmin.value) {
+      loadBtSetting()
+    }
   }
   
   // Load initial aria2 status
@@ -52,6 +77,21 @@ const loadAria2Status = async () => {
     console.error('Failed to load aria2 status:', err)
     aria2Status.value = 'unknown'
     error.value = t('vapor', 'Failed to load aria2 status')
+  }
+}
+
+const loadBtSetting = async () => {
+  try {
+    const response = await fetch(helper.generateUrl('/apps/vapor/getsettings'), {
+      method: 'POST'
+    })
+    const data = await response.json()
+    if (data && data.settings) {
+      disableBtNonAdmin.value = data.settings.ncd_disable_bt ? true : false
+    }
+  } catch (err) {
+    console.error('Failed to load BT setting:', err)
+    btError.value = t('vapor', 'Failed to load BitTorrent setting')
   }
 }
 
@@ -77,6 +117,33 @@ const toggleAria2 = async () => {
     helper.error(t('vapor', `Failed to ${aria2Status.value === 'running' ? 'stop' : 'start'} aria2`))
   } finally {
     loading.value = false
+  }
+}
+
+const toggleDisableBt = async () => {
+  btError.value = null
+  
+  try {
+    const response = await fetch(helper.generateUrl('/apps/vapor/admin/save'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: `ncd_disable_bt=${disableBtNonAdmin.value ? '1' : '0'}`
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to save BitTorrent setting')
+    }
+    
+    const data = await response.json()
+    helper.message(t('vapor', 'BitTorrent setting saved'))
+  } catch (err) {
+    console.error('Failed to toggle BT setting:', err)
+    btError.value = err.message
+    helper.error(t('vapor', 'Failed to save BitTorrent setting'))
+    // Revert the toggle on error
+    disableBtNonAdmin.value = !disableBtNonAdmin.value
   }
 }
 </script>
@@ -131,6 +198,7 @@ const toggleAria2 = async () => {
     font-weight: 600;
     font-size: 0.875rem;
     transition: background-color 0.2s ease;
+    margin-bottom: 1rem;
 
     &.running {
       background-color: #f44336;
@@ -153,6 +221,40 @@ const toggleAria2 = async () => {
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+  }
+
+  .bt-toggle-section {
+    border-top: 1px solid var(--color-border);
+    padding-top: 1rem;
+    margin-top: 1rem;
+
+    .bt-toggle {
+      .bt-label {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        cursor: pointer;
+        margin-bottom: 0.5rem;
+
+        .bt-checkbox {
+          margin-top: 0.25rem;
+          cursor: pointer;
+        }
+
+        .bt-text {
+          font-weight: 600;
+          font-size: 0.875rem;
+          line-height: 1.4;
+        }
+      }
+
+      .bt-description {
+        margin: 0.5rem 0 0 1.5rem;
+        font-size: 0.75rem;
+        color: var(--color-text-maxcontrast);
+        line-height: 1.4;
+      }
     }
   }
 
