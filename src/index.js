@@ -25,8 +25,8 @@ window.addEventListener('DOMContentLoaded', function () {
 
   const app = createApp(App)
   
-  // Provide settings to all components
-  app.provide('settings', settings)
+  // Provide settings to all components - wrapped in settings object for mainForm compatibility
+  app.provide('settings', { settings })
   
   // Use router
   app.use(router)

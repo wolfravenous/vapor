@@ -1,59 +1,60 @@
 <template>
-  <nav id="app-navigation" class="app-navigation">
-    <ul class="app-navigation-list">
-      <li class="app-navigation-entry" v-for="item in menuItems" :key="item.name">
-        <router-link 
-          :to="{ name: item.name }" 
-          class="app-navigation-entry-link"
-          :class="{ active: $route.name === item.name }"
-        >
-          <span class="app-navigation-entry-icon" :class="item.icon"></span>
-          <span class="app-navigation-entry-title">{{ item.label }}</span>
-          <span class="app-navigation-entry-utils" v-if="counters[item.name] > 0">
-            <span class="app-navigation-entry-utils-counter">
-              {{ counters[item.name] }}
-            </span>
-          </span>
-        </router-link>
-      </li>
-    </ul>
+  <nav id="app-navigation" class="sidebar">
+    <div class="sidebar-menu">
+      <div class="menu-header">
+        <h2>{{ t('vapor', 'Downloads') }}</h2>
+      </div>
 
-    <!-- Settings Section -->
-    <div class="app-navigation-settings">
-      <button 
-        class="app-navigation-settings-button"
-        @click="toggleSettings"
+      <router-link 
+        to="/active" 
+        class="menu-item"
+        :class="{ active: $route.path === '/active' }"
       >
-        <span class="icon-settings"></span>
-        <span>{{ t('vapor', 'Settings') }}</span>
+        <span class="menu-icon">▶</span>
+        <span class="menu-label">{{ t('vapor', 'Active Downloads') }}</span>
+        <span v-if="counters.active" class="menu-badge">{{ counters.active }}</span>
+      </router-link>
+
+      <router-link 
+        to="/waiting" 
+        class="menu-item"
+        :class="{ active: $route.path === '/waiting' }"
+      >
+        <span class="menu-icon">⏸</span>
+        <span class="menu-label">{{ t('vapor', 'Waiting Downloads') }}</span>
+        <span v-if="counters.waiting" class="menu-badge">{{ counters.waiting }}</span>
+      </router-link>
+
+      <router-link 
+        to="/failed" 
+        class="menu-item"
+        :class="{ active: $route.path === '/failed' }"
+      >
+        <span class="menu-icon">✕</span>
+        <span class="menu-label">{{ t('vapor', 'Failed Downloads') }}</span>
+        <span v-if="counters.failed" class="menu-badge">{{ counters.failed }}</span>
+      </router-link>
+
+      <router-link 
+        to="/complete" 
+        class="menu-item"
+        :class="{ active: $route.path === '/complete' }"
+      >
+        <span class="menu-icon">✓</span>
+        <span class="menu-label">{{ t('vapor', 'Complete Downloads') }}</span>
+        <span v-if="counters.complete" class="menu-badge">{{ counters.complete }}</span>
+      </router-link>
+    </div>
+
+    <div class="sidebar-settings">
+      <button class="settings-toggle" @click="toggleSettings">
+        <span class="settings-icon">⚙</span>
+        <span class="settings-label">{{ t('vapor', 'Settings') }}</span>
+        <span class="toggle-icon" :class="{ open: settingsOpen }">▼</span>
       </button>
-      
-      <div v-show="showSettings" class="app-navigation-settings-content">
-        <div class="settings-item">
-          <label for="hide-errors">{{ t('vapor', 'Hide Errors') }}</label>
-          <input 
-            id="hide-errors" 
-            type="checkbox" 
-            v-model="settings.hideErrors"
-            @change="saveSetting('hideErrors')"
-          >
-        </div>
-        <div class="settings-item">
-          <label for="disable-bt">{{ t('vapor', 'Disable BT for non-admin users') }}</label>
-          <input 
-            id="disable-bt" 
-            type="checkbox" 
-            v-model="settings.disableBt"
-            @change="saveSetting('disableBt')"
-          >
-        </div>
-        <hr>
-        <div class="settings-item">
-          <span class="settings-label">{{ t('vapor', 'Personal Settings') }}</span>
-        </div>
-        <div class="settings-item">
-          <span class="settings-label">{{ t('vapor', 'Admin Settings') }}</span>
-        </div>
+
+      <div v-if="settingsOpen" class="settings-content">
+        <Aria2Control />
       </div>
     </div>
   </nav>
@@ -61,163 +62,139 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
-import { useRoute } from 'vue-router'
+import Aria2Control from './Aria2Control.vue'
 
 const route = useRoute()
-const { counters } = useDownloads()
-
-const showSettings = ref(false)
-
-const settings = ref({
-  hideErrors: false,
-  disableBt: false
-})
-
-const menuItems = [
-  { name: 'active', label: t('vapor', 'Active Downloads'), icon: 'icon-play' },
-  { name: 'waiting', label: t('vapor', 'Waiting Downloads'), icon: 'icon-pause' },
-  { name: 'failed', label: t('vapor', 'Failed Downloads'), icon: 'icon-close' },
-  { name: 'complete', label: t('vapor', 'Complete Downloads'), icon: 'icon-checkmark' }
-]
+const { downloads, counters, fetchCounters } = useDownloads()
+const settingsOpen = ref(false)
 
 const toggleSettings = () => {
-  showSettings.value = !showSettings.value
+  settingsOpen.value = !settingsOpen.value
 }
 
-const saveSetting = (key) => {
-  console.log(`Saved setting: ${key} = ${settings.value[key]}`)
-  // TODO: Persist to backend
-}
+// Fetch initial counters
+fetchCounters()
 </script>
 
 <style scoped lang="scss">
-.app-navigation {
+.sidebar {
+  width: 250px;
+  background-color: var(--color-background-secondary);
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-}
 
-.app-navigation-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
+  .sidebar-menu {
+    flex: 1;
+    padding: 1rem 0;
 
-.app-navigation-entry {
-  margin: 0;
-  
-  .app-navigation-entry-link {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    color: var(--color-text-maxcontrast);
-    text-decoration: none;
-    transition: background-color 0.2s ease;
+    .menu-header {
+      padding: 0 1rem;
+      margin-bottom: 1rem;
 
-    &:hover {
-      background-color: var(--color-background-hover);
+      h2 {
+        font-size: 0.875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--color-text-maxcontrast);
+        margin: 0;
+        padding: 0;
+      }
     }
 
-    &.active {
-      background-color: var(--color-background-hover);
-      color: var(--color-primary);
-      font-weight: 600;
-    }
-
-    .app-navigation-entry-icon {
-      display: inline-block;
-      width: 1.5rem;
-      height: 1.5rem;
-      margin-right: 0.75rem;
-      flex-shrink: 0;
-    }
-
-    .app-navigation-entry-title {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .app-navigation-entry-utils {
+    .menu-item {
       display: flex;
       align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: var(--color-text);
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+      cursor: pointer;
 
-      .app-navigation-entry-utils-counter {
+      &:hover {
+        background-color: var(--color-background-hover);
+      }
+
+      &.active {
+        background-color: var(--color-primary-light);
+        color: var(--color-primary);
+        font-weight: 600;
+      }
+
+      .menu-icon {
+        font-size: 1rem;
+        width: 1.5rem;
+        text-align: center;
+      }
+
+      .menu-label {
+        flex: 1;
+        font-size: 0.875rem;
+      }
+
+      .menu-badge {
         background-color: var(--color-primary);
         color: white;
-        border-radius: 999px;
-        padding: 0.125rem 0.5rem;
+        border-radius: 50%;
+        width: 1.5rem;
+        height: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 0.75rem;
-        font-weight: 600;
-        margin-left: 0.5rem;
+        font-weight: 700;
       }
     }
   }
-}
 
-.app-navigation-settings {
-  margin-top: auto;
-  border-top: 1px solid var(--color-border);
-  padding: 0.5rem 0;
+  .sidebar-settings {
+    border-top: 1px solid var(--color-border);
+    padding: 0;
 
-  .app-navigation-settings-button {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 0.5rem 1rem;
-    background: none;
-    border: none;
-    color: var(--color-text-maxcontrast);
-    cursor: pointer;
-    text-align: left;
-    transition: background-color 0.2s ease;
-
-    &:hover {
-      background-color: var(--color-background-hover);
-    }
-
-    .icon-settings {
-      display: inline-block;
-      width: 1.5rem;
-      height: 1.5rem;
-      margin-right: 0.75rem;
-      flex-shrink: 0;
-    }
-  }
-
-  .app-navigation-settings-content {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-
-    .settings-item {
+    .settings-toggle {
+      width: 100%;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0.5rem 0;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: none;
+      border: none;
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: background-color 0.2s ease;
 
-      label {
-        cursor: pointer;
-        flex: 1;
+      &:hover {
+        background-color: var(--color-background-hover);
       }
 
-      input[type="checkbox"] {
-        margin-left: 0.5rem;
+      .settings-icon {
+        font-size: 1rem;
       }
 
       .settings-label {
-        font-weight: 600;
-        color: var(--color-text);
+        flex: 1;
+        text-align: left;
+      }
+
+      .toggle-icon {
+        transition: transform 0.2s ease;
+
+        &.open {
+          transform: rotate(180deg);
+        }
       }
     }
 
-    hr {
-      margin: 0.5rem 0;
-      border: none;
-      border-top: 1px solid var(--color-border);
+    .settings-content {
+      padding: 0;
     }
   }
 }

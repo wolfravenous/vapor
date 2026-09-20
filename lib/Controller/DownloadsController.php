@@ -197,4 +197,100 @@ class DownloadsController extends Controller
             return [];
         }
     }
+
+    /**
+     * Start Aria2 daemon
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function startAria2()
+    {
+        try {
+            if (!$this->isAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Only admins can control aria2'],
+                    \OCP\AppFramework\Http::STATUS_FORBIDDEN
+                );
+            }
+
+            $this->aria2->startDaemon();
+            
+            return new JSONResponse([
+                'status' => 'success',
+                'running' => true,
+                'message' => 'Aria2 started'
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Stop Aria2 daemon
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function stopAria2()
+    {
+        try {
+            if (!$this->isAdmin()) {
+                return new JSONResponse(
+                    ['error' => 'Only admins can control aria2'],
+                    \OCP\AppFramework\Http::STATUS_FORBIDDEN
+                );
+            }
+
+            $this->aria2->stopDaemon();
+            
+            return new JSONResponse([
+                'status' => 'success',
+                'running' => false,
+                'message' => 'Aria2 stopped'
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Get Aria2 daemon status
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getAria2Status()
+    {
+        try {
+            $isRunning = $this->aria2->isRunning();
+            
+            return new JSONResponse([
+                'status' => 'success',
+                'running' => $isRunning
+            ]);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Helper: Check if current user is admin
+     */
+    private function isAdmin(): bool
+    {
+        $user = \OC::$server->getUserSession()->getUser();
+        if (!$user) {
+            return false;
+        }
+        return \OC::$server->getGroupManager()->isAdmin($user->getUID());
+    }
 }
+
+
