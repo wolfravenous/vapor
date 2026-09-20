@@ -5,13 +5,13 @@
       <p>{{ t('vapor', 'Loading downloads...') }}</p>
     </div>
 
-    <div v-else-if="downloads.length === 0" class="empty-state">
+    <div v-else-if="displayDownloads.length === 0" class="empty-state">
       <p>{{ t('vapor', 'No active downloads') }}</p>
     </div>
 
     <div v-else class="downloads-list">
       <div 
-        v-for="download in downloads" 
+        v-for="download in displayDownloads" 
         :key="download.gid"
         class="download-item"
         :class="{ 'ytdl': download.tool === 'ytdl', 'aria2': download.tool === 'aria2' }"
@@ -36,8 +36,12 @@
             {{ formatBytes(download.completedSize) }} / {{ formatBytes(download.totalSize) }}
           </span>
           <span v-else class="detail">{{ t('vapor', 'Processing...') }}</span>
-          <button class="btn-cancel" @click="cancelDownload(download.gid)">
-            {{ t('vapor', 'Cancel') }}
+          <button 
+            class="btn-cancel" 
+            @click="cancelDownload(download.gid)"
+            :disabled="actionLoading[download.gid]"
+          >
+            {{ actionLoading[download.gid] ? t('vapor', 'Cancelling...') : t('vapor', 'Cancel') }}
           </button>
         </div>
       </div>
@@ -49,10 +53,12 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
+import helper from '../utils/helper'
 
 const { downloads, fetchDownloads } = useDownloads()
 const loading = ref(true)
 const displayDownloads = ref([])
+const actionLoading = ref({})
 let pollInterval = null
 
 const formatBytes = (bytes) => {
@@ -68,9 +74,29 @@ const formatSpeed = (bytesPerSec) => {
   return formatBytes(bytesPerSec) + '/s'
 }
 
-const cancelDownload = (gid) => {
-  console.log('Cancel download:', gid)
-  // TODO: Implement cancel functionality
+const cancelDownload = async (gid) => {
+  actionLoading.value[gid] = true
+  try {
+    const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/cancel`), {
+      method: 'POST'
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to cancel download')
+    }
+    
+    const data = await response.json()
+    helper.message(t('vapor', 'Download cancelled'))
+    
+    // Refresh downloads list
+    await fetchDownloads('active')
+    displayDownloads.value = downloads.value.active || []
+  } catch (error) {
+    console.error('Failed to cancel download:', error)
+    helper.error(t('vapor', 'Failed to cancel download'))
+  } finally {
+    actionLoading.value[gid] = false
+  }
 }
 
 const loadDownloads = async () => {
@@ -235,9 +261,15 @@ onUnmounted(() => {
       cursor: pointer;
       font-size: 0.875rem;
       transition: background-color 0.2s ease;
+      white-space: nowrap;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: #d32f2f;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
     }
   }

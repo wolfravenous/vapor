@@ -5,13 +5,13 @@
       <p>{{ t('vapor', 'Loading downloads...') }}</p>
     </div>
 
-    <div v-else-if="downloads.length === 0" class="empty-state">
+    <div v-else-if="displayDownloads.length === 0" class="empty-state">
       <p>{{ t('vapor', 'No completed downloads') }}</p>
     </div>
 
     <div v-else class="downloads-list">
       <div 
-        v-for="download in downloads" 
+        v-for="download in displayDownloads" 
         :key="download.gid"
         class="download-item complete"
         :class="{ 'ytdl': download.tool === 'ytdl', 'aria2': download.tool === 'aria2' }"
@@ -32,11 +32,12 @@
           <span v-if="download.totalSize !== null" class="detail">
             {{ formatBytes(download.totalSize) }}
           </span>
-          <button class="btn-open" @click="openDownload(download.gid)">
-            {{ t('vapor', 'Open') }}
-          </button>
-          <button class="btn-delete" @click="deleteDownload(download.gid)">
-            {{ t('vapor', 'Delete') }}
+          <button 
+            class="btn-delete" 
+            @click="deleteDownload(download.gid)"
+            :disabled="actionLoading[download.gid]"
+          >
+            {{ actionLoading[download.gid] ? t('vapor', 'Deleting...') : t('vapor', 'Delete') }}
           </button>
         </div>
       </div>
@@ -48,10 +49,12 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
+import helper from '../utils/helper'
 
 const { downloads, fetchDownloads } = useDownloads()
 const loading = ref(true)
 const displayDownloads = ref([])
+const actionLoading = ref({})
 let pollInterval = null
 
 const formatBytes = (bytes) => {
@@ -62,14 +65,28 @@ const formatBytes = (bytes) => {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
 
-const openDownload = (gid) => {
-  console.log('Open download:', gid)
-  // TODO: Implement open functionality
-}
+const deleteDownload = async (gid) => {
+  actionLoading.value[gid] = true
+  try {
+    const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/delete`), {
+      method: 'POST'
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to delete download')
+    }
 
-const deleteDownload = (gid) => {
-  console.log('Delete download:', gid)
-  // TODO: Implement delete functionality
+    helper.message(t('vapor', 'Download deleted'))
+    
+    // Refresh downloads list
+    await fetchDownloads('complete')
+    displayDownloads.value = downloads.value.complete || []
+  } catch (error) {
+    console.error('Failed to delete download:', error)
+    helper.error(t('vapor', 'Failed to delete download'))
+  } finally {
+    actionLoading.value[gid] = false
+  }
 }
 
 const loadDownloads = async () => {
@@ -229,23 +246,20 @@ onUnmounted(() => {
       cursor: pointer;
       font-size: 0.875rem;
       transition: background-color 0.2s ease;
-    }
-
-    .btn-open {
-      background-color: #2196f3;
-      color: white;
-
-      &:hover {
-        background-color: #1976d2;
-      }
+      white-space: nowrap;
     }
 
     .btn-delete {
       background-color: #f44336;
       color: white;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: #d32f2f;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
     }
   }

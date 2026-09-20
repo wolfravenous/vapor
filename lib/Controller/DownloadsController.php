@@ -291,6 +291,222 @@ class DownloadsController extends Controller
         }
         return \OC::$server->getGroupManager()->isAdmin($user->getUID());
     }
+
+    /**
+     * Cancel/Remove a download
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+
+    /**
+     * Cancel/Remove a download
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function cancelDownload(string $gid)
+    {
+        try {
+            if (!$this->userId) {
+                return new JSONResponse(
+                    ['error' => 'User not authenticated'],
+                    \OCP\AppFramework\Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            // Remove download via aria2
+            $result = $this->aria2->remove($gid);
+            
+            if ($result === true || (is_array($result) && isset($result['result']) && $result['result'] === 'OK')) {
+                return new JSONResponse([
+                    'status' => 'success',
+                    'message' => 'Download cancelled'
+                ]);
+            }
+
+            return new JSONResponse(
+                ['error' => 'Failed to cancel download: ' . json_encode($result)],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Exception: ' . $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Delete a completed download
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function deleteDownload(string $gid)
+    {
+        try {
+            if (!$this->userId) {
+                return new JSONResponse(
+                    ['error' => 'User not authenticated'],
+                    \OCP\AppFramework\Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            // Remove from aria2 results
+            $result = $this->aria2->removeDownloadResult($gid);
+            
+            if ($result === true || (is_array($result) && isset($result['result']) && $result['result'] === 'OK')) {
+                return new JSONResponse([
+                    'status' => 'success',
+                    'message' => 'Download deleted'
+                ]);
+            }
+
+            return new JSONResponse(
+                ['error' => 'Failed to delete download: ' . json_encode($result)],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Exception: ' . $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Retry a failed download (Ytdl only)
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function retryDownload(string $gid)
+    {
+        try {
+            if (!$this->userId) {
+                return new JSONResponse(
+                    ['error' => 'User not authenticated'],
+                    \OCP\AppFramework\Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            // Retry ytdl download - call the Ytdl Redownload method
+            $result = $this->ytdl->redownload($gid);
+            
+            if ($result) {
+                return new JSONResponse([
+                    'status' => 'success',
+                    'message' => 'Download retry started'
+                ]);
+            }
+
+            return new JSONResponse(
+                ['error' => 'Failed to retry download'],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Exception: ' . $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Pause a download
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function pauseDownload(string $gid)
+    {
+        try {
+            if (!$this->userId) {
+                return new JSONResponse(
+                    ['error' => 'User not authenticated'],
+                    \OCP\AppFramework\Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            $result = $this->aria2->pause($gid);
+            
+            if ($result === true || (is_array($result) && isset($result['result']) && $result['result'] === 'OK')) {
+                return new JSONResponse([
+                    'status' => 'success',
+                    'message' => 'Download paused'
+                ]);
+            }
+
+            return new JSONResponse(
+                ['error' => 'Failed to pause download: ' . json_encode($result)],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Exception: ' . $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * Resume a paused download
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function resumeDownload(string $gid)
+    {
+        try {
+            if (!$this->userId) {
+                return new JSONResponse(
+                    ['error' => 'User not authenticated'],
+                    \OCP\AppFramework\Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            $result = $this->aria2->unpause($gid);
+            
+            if ($result === true || (is_array($result) && isset($result['result']) && $result['result'] === 'OK')) {
+                return new JSONResponse([
+                    'status' => 'success',
+                    'message' => 'Download resumed'
+                ]);
+            }
+
+            return new JSONResponse(
+                ['error' => 'Failed to resume download: ' . json_encode($result)],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => 'Exception: ' . $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+            if (!$this->userId) {
+
+                return new JSONResponse(
+                    ['error' => 'User not authenticated'],
+                    \OCP\AppFramework\Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            $result = $this->aria2->unpause($gid);
+            if ($result && isset($result['result'])) {
+                return new JSONResponse([
+                    'status' => 'success',
+                    'message' => 'Download resumed'
+                ]);
+            }
+
+            return new JSONResponse(
+                ['error' => 'Failed to resume download'],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }
 
 

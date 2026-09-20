@@ -5,13 +5,13 @@
       <p>{{ t('vapor', 'Loading downloads...') }}</p>
     </div>
 
-    <div v-else-if="downloads.length === 0" class="empty-state">
+    <div v-else-if="displayDownloads.length === 0" class="empty-state">
       <p>{{ t('vapor', 'No failed downloads') }}</p>
     </div>
 
     <div v-else class="downloads-list">
       <div 
-        v-for="download in downloads" 
+        v-for="download in displayDownloads" 
         :key="download.gid"
         class="download-item failed"
         :class="{ 'ytdl': download.tool === 'ytdl', 'aria2': download.tool === 'aria2' }"
@@ -29,11 +29,20 @@
         </div>
 
         <div class="download-details">
-          <button class="btn-retry" @click="retryDownload(download.gid)">
-            {{ t('vapor', 'Retry') }}
+          <button 
+            v-if="download.tool === 'ytdl'"
+            class="btn-retry" 
+            @click="retryDownload(download.gid)"
+            :disabled="actionLoading[download.gid]"
+          >
+            {{ actionLoading[download.gid] ? t('vapor', 'Retrying...') : t('vapor', 'Retry') }}
           </button>
-          <button class="btn-delete" @click="deleteDownload(download.gid)">
-            {{ t('vapor', 'Delete') }}
+          <button 
+            class="btn-delete" 
+            @click="deleteDownload(download.gid)"
+            :disabled="actionLoading[download.gid]"
+          >
+            {{ actionLoading[download.gid] ? t('vapor', 'Deleting...') : t('vapor', 'Delete') }}
           </button>
         </div>
       </div>
@@ -45,20 +54,60 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
+import helper from '../utils/helper'
 
 const { downloads, fetchDownloads } = useDownloads()
 const loading = ref(true)
 const displayDownloads = ref([])
+const actionLoading = ref({})
 let pollInterval = null
 
-const retryDownload = (gid) => {
-  console.log('Retry download:', gid)
-  // TODO: Implement retry functionality
+const retryDownload = async (gid) => {
+  actionLoading.value[gid] = true
+  try {
+    const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/retry`), {
+      method: 'POST'
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to retry download')
+    }
+
+    helper.message(t('vapor', 'Download retry started'))
+    
+    // Refresh downloads list
+    await fetchDownloads('failed')
+    displayDownloads.value = downloads.value.failed || []
+  } catch (error) {
+    console.error('Failed to retry download:', error)
+    helper.error(t('vapor', 'Failed to retry download'))
+  } finally {
+    actionLoading.value[gid] = false
+  }
 }
 
-const deleteDownload = (gid) => {
-  console.log('Delete download:', gid)
-  // TODO: Implement delete functionality
+const deleteDownload = async (gid) => {
+  actionLoading.value[gid] = true
+  try {
+    const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/delete`), {
+      method: 'POST'
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to delete download')
+    }
+
+    helper.message(t('vapor', 'Download deleted'))
+    
+    // Refresh downloads list
+    await fetchDownloads('failed')
+    displayDownloads.value = downloads.value.failed || []
+  } catch (error) {
+    console.error('Failed to delete download:', error)
+    helper.error(t('vapor', 'Failed to delete download'))
+  } finally {
+    actionLoading.value[gid] = false
+  }
 }
 
 const loadDownloads = async () => {
@@ -205,14 +254,20 @@ onUnmounted(() => {
       cursor: pointer;
       font-size: 0.875rem;
       transition: background-color 0.2s ease;
+      white-space: nowrap;
     }
 
     .btn-retry {
       background-color: #2196f3;
       color: white;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: #1976d2;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
     }
 
@@ -220,8 +275,13 @@ onUnmounted(() => {
       background-color: #f44336;
       color: white;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: #d32f2f;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
     }
   }

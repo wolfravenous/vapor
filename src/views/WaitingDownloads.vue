@@ -5,13 +5,13 @@
       <p>{{ t('vapor', 'Loading downloads...') }}</p>
     </div>
 
-    <div v-else-if="downloads.length === 0" class="empty-state">
+    <div v-else-if="displayDownloads.length === 0" class="empty-state">
       <p>{{ t('vapor', 'No waiting downloads') }}</p>
     </div>
 
     <div v-else class="downloads-list">
       <div 
-        v-for="download in downloads" 
+        v-for="download in displayDownloads" 
         :key="download.gid"
         class="download-item waiting"
         :class="{ 'ytdl': download.tool === 'ytdl', 'aria2': download.tool === 'aria2' }"
@@ -25,11 +25,19 @@
         </div>
 
         <div class="download-details">
-          <button class="btn-resume" @click="resumeDownload(download.gid)">
-            {{ t('vapor', 'Resume') }}
+          <button 
+            class="btn-resume" 
+            @click="resumeDownload(download.gid)"
+            :disabled="actionLoading[download.gid]"
+          >
+            {{ actionLoading[download.gid] ? t('vapor', 'Resuming...') : t('vapor', 'Resume') }}
           </button>
-          <button class="btn-cancel" @click="cancelDownload(download.gid)">
-            {{ t('vapor', 'Cancel') }}
+          <button 
+            class="btn-cancel" 
+            @click="cancelDownload(download.gid)"
+            :disabled="actionLoading[download.gid]"
+          >
+            {{ actionLoading[download.gid] ? t('vapor', 'Cancelling...') : t('vapor', 'Cancel') }}
           </button>
         </div>
       </div>
@@ -41,20 +49,60 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
+import helper from '../utils/helper'
 
 const { downloads, fetchDownloads } = useDownloads()
 const loading = ref(true)
 const displayDownloads = ref([])
+const actionLoading = ref({})
 let pollInterval = null
 
-const resumeDownload = (gid) => {
-  console.log('Resume download:', gid)
-  // TODO: Implement resume functionality
+const resumeDownload = async (gid) => {
+  actionLoading.value[gid] = true
+  try {
+    const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/resume`), {
+      method: 'POST'
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to resume download')
+    }
+
+    helper.message(t('vapor', 'Download resumed'))
+    
+    // Refresh downloads list
+    await fetchDownloads('waiting')
+    displayDownloads.value = downloads.value.waiting || []
+  } catch (error) {
+    console.error('Failed to resume download:', error)
+    helper.error(t('vapor', 'Failed to resume download'))
+  } finally {
+    actionLoading.value[gid] = false
+  }
 }
 
-const cancelDownload = (gid) => {
-  console.log('Cancel download:', gid)
-  // TODO: Implement cancel functionality
+const cancelDownload = async (gid) => {
+  actionLoading.value[gid] = true
+  try {
+    const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/cancel`), {
+      method: 'POST'
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to cancel download')
+    }
+
+    helper.message(t('vapor', 'Download cancelled'))
+    
+    // Refresh downloads list
+    await fetchDownloads('waiting')
+    displayDownloads.value = downloads.value.waiting || []
+  } catch (error) {
+    console.error('Failed to cancel download:', error)
+    helper.error(t('vapor', 'Failed to cancel download'))
+  } finally {
+    actionLoading.value[gid] = false
+  }
 }
 
 const loadDownloads = async () => {
@@ -193,14 +241,20 @@ onUnmounted(() => {
       cursor: pointer;
       font-size: 0.875rem;
       transition: background-color 0.2s ease;
+      white-space: nowrap;
     }
 
     .btn-resume {
       background-color: #4caf50;
       color: white;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: #45a049;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
     }
 
@@ -208,8 +262,13 @@ onUnmounted(() => {
       background-color: #f44336;
       color: white;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: #d32f2f;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
     }
   }
