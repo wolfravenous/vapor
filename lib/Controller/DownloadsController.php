@@ -480,3 +480,4 @@ class DownloadsController extends Controller
             );
         }
     }
+  }

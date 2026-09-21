@@ -26,7 +26,7 @@ Download videos from 700+ video sites (youtube,youku,vimo,dailymotion,twitter,fa
     <navigations>
         <navigation>
             <name>Vapor</name>
-            <route>vapor.Main.Index</route>
+            <route>vapor.main.index</route>
             <icon>vapor.svg</icon>
         </navigation>
     </navigations>
