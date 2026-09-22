@@ -336,7 +336,8 @@ class DownloadsController extends Controller
     }
 
     /**
-     * Delete a completed download
+     * Delete a completed download: removes the file from storage,
+     * updates the Nextcloud file cache, cleans up DB + aria2 result
      * @NoAdminRequired
      * @NoCSRFRequired
      */
@@ -350,26 +351,95 @@ class DownloadsController extends Controller
                 );
             }
 
-            // Remove from aria2 results
-            $result = $this->aria2->removeDownloadResult($gid);
-            
-            if ($result === true || (is_array($result) && isset($result['result']) && $result['result'] === 'OK')) {
-                return new JSONResponse([
-                    'status' => 'success',
-                    'message' => 'Download deleted'
-                ]);
+            // Ownership guard: if we have a DB record for this gid, it must belong to this user
+            $row = $this->dbHelper->getByGid($gid);
+            if ($row && ($row['uid'] ?? null) !== $this->userId) {
+                return new JSONResponse(
+                    ['error' => 'Not authorized to delete this download'],
+                    \OCP\AppFramework\Http::STATUS_FORBIDDEN
+                );
             }
 
-            return new JSONResponse(
-                ['error' => 'Failed to delete download: ' . json_encode($result)],
-                \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
-            );
+            // 1. Resolve file path(s) BEFORE removing the aria2 result
+            $paths = $this->getDownloadPaths($gid, $row);
+
+            // 2. Delete via Nextcloud Files API (disk + cache in one step)
+            $root = \OC::$server->get(\OCP\Files\IRootFolder::class);
+            $userFolder = $root->getUserFolder($this->userId);
+            $fileDeleted = false;
+
+            foreach ($paths as $filePath) {
+                if (!$filePath || !file_exists($filePath)) {
+                    continue;
+                }
+                $relativePath = $userFolder->getRelativePath($filePath);
+                if (!$relativePath) {
+                    continue; // outside user's folder - refuse to touch it
+                }
+                try {
+                    $userFolder->get($relativePath)->delete();
+                    $fileDeleted = true;
+                } catch (\OCP\Files\NotFoundException $e) {
+                    // Known to PHP but not to Nextcloud: plain unlink fallback
+                    @unlink($filePath);
+                    $fileDeleted = true;
+                }
+            }
+
+            // 3. Remove the DB record (covers both aria2 and ytdl downloads)
+            $this->dbHelper->deleteByGid($gid);
+
+            // 4. Evict from aria2's stopped-result list (best effort - ytdl gids will fail here)
+            $this->aria2->removeDownloadResult($gid);
+
+            return new JSONResponse([
+                'status' => 'success',
+                'fileDeleted' => $fileDeleted,
+                'message' => $fileDeleted
+                    ? 'Download and file deleted'
+                    : 'Download removed from list (no file found on disk)',
+            ]);
         } catch (\Exception $e) {
             return new JSONResponse(
                 ['error' => 'Exception: ' . $e->getMessage()],
                 \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    /**
+     * Resolve absolute file path(s) for a gid
+     */
+    private function getDownloadPaths(string $gid, $row = null): array
+    {
+        $paths = [];
+
+        // Try aria2 first (completed downloads stay queryable until removeDownloadResult)
+        try {
+            $status = $this->aria2->tellStatus($gid);
+            $info = is_array($status) ? reset($status) : [];
+            $dir = $info['dir'] ?? '';
+            foreach (($info['files'] ?? []) as $file) {
+                $p = $file['path'] ?? '';
+                if ($p === '') {
+                    continue;
+                }
+                // Multi-file torrents may return paths relative to the download dir
+                if ($p[0] !== '/' && $dir !== '') {
+                    $p = rtrim($dir, '/') . '/' . ltrim($p, '/');
+                }
+                $paths[] = $p;
+            }
+        } catch (\Exception $e) {
+            // not an aria2 gid (e.g. ytdl) - fall through
+        }
+
+        // Fallback for ytdl: resolve via the DB record's filename
+        if (empty($paths) && $row && !empty($row['filename']) && $row['filename'] !== 'unknown') {
+            $paths[] = rtrim(Helper::getDownloadDir(), '/') . '/' . $row['filename'];
+        }
+
+        return $paths;
     }
 
     /**
