@@ -21,8 +21,6 @@ import Sidebar from './components/Sidebar.vue'
 import mainForm from './components/mainForm'
 import helper from './utils/helper'
 import { translate as t } from '@nextcloud/l10n'
-import { useDownloads } from './stores/downloads'
-
 
 const successCallback = (data, element) => {
   if (!data) {
@@ -87,29 +85,17 @@ export default {
         }
         message = helper.t('Download task started!')
         helper.pollingYtdl()
+        helper.setContentTableType('ytdl-downloads')
       } else {
         helper.polling()
+        helper.setContentTableType('active-downloads')
       }
 
       if (message) {
         helper.info(message)
       }
-      
-      // Optimistically add download to store
-      const { addDownload } = useDownloads()
-      const optimisticDownload = {
-        id: Date.now(),
-        filename: formData['text-input-value'].split('/').pop(),
-        status: 'active',
-        url: formData['text-input-value'],
-        progress: 0,
-        timestamp: new Date().toISOString()
-      }
-      addDownload(optimisticDownload)
 
       let url = formWrapper.getAttribute('action')
-      console.log('Form action attribute:', url)
-      console.log('Download type:', formData.type)
       formData['url'] = formData['text-input-value']
       delete formData['text-input-value']
 

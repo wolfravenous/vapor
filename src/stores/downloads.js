@@ -65,11 +65,16 @@ export function useDownloads() {
     }
   }
 
+  const addDownload = (download) => {
+    downloads.value.active.unshift(download)
+  }
+
   return {
     downloads,
     counters,
     fetchDownloads,
     fetchCounters,
-    fetchAll
+    fetchAll,
+    addDownload
   }
 }
