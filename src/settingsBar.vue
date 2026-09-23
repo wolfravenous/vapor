@@ -9,6 +9,11 @@
         name="ncd_hide_errors"
       ></toggleButton>
     </div>
+
+
+ <!-- TODO: temporarily hidden - duplicate of the checkbox in Aria2Control.
+         Re-enable once one of the two is chosen as the canonical control.
+
     <div class="vapor-settings-item" :data-tippy-content="btTooltip">
       <toggleButton
         v-if="isAdmin"
@@ -19,6 +24,9 @@
         @changed="toggle"
       ></toggleButton>
     </div>
+	-->
+
+
     <div class="vapor-settings-item">
       <a :href="personal.url" title="">
         <button>{{ personal.title }}</button>
@@ -45,20 +53,20 @@ export default {
   data() {
     let personal = {
       title: t("vapor", "Personal Settings"),
-      url: this.settings.personal_url,
+      url: this.settings.settings.personal_url,
     };
     let admin = {
       title: t("vapor", "Admin Settings"),
-      url: this.settings.admin_url,
+      url: this.settings.settings.admin_url,
     };
     return {
       personal: personal,
       admin: admin,
-      isAdmin: this.settings.is_admin,
+      isAdmin: this.settings.settings.is_admin,
       sectionName: t("vapor", "Settings"),
       errorText: t("vapor", "Hide Errors"),
-      toggleStatus: helper.str2Boolean(this.settings.ncd_hide_errors),
-      btStatus: helper.str2Boolean(this.settings.ncd_disable_bt),
+      toggleStatus: helper.str2Boolean(this.settings.settings.ncd_hide_errors),
+      btStatus: helper.str2Boolean(this.settings.settings.ncd_disable_bt),
       errorTooltip: t("vapor", "Enable this to hide errors"),
       btTooltip: t("ncdownload", "Disable BT for non-admin users"),
     };

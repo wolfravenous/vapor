@@ -55,6 +55,7 @@
 
       <div v-if="settingsOpen" class="settings-content">
         <Aria2Control />
+        <settingsBar />
       </div>
     </div>
   </nav>
@@ -66,6 +67,7 @@ import { useRoute } from 'vue-router'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
 import Aria2Control from './Aria2Control.vue'
+import settingsBar from '../settingsBar.vue'
 
 const route = useRoute()
 const { downloads, counters, fetchCounters } = useDownloads()
