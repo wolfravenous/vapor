@@ -65,29 +65,43 @@ const formatBytes = (bytes) => {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
 
+
 const deleteDownload = async (gid) => {
   actionLoading.value[gid] = true
   try {
     const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/delete`), {
       method: 'POST'
     })
-    
-    if (!response.ok) {
-      throw new Error('Failed to delete download')
+
+    let data = {}
+    try {
+      data = await response.json()
+    } catch (e) {
+      // non-JSON response; fall through to !response.ok check below
     }
 
-    helper.message(t('vapor', 'Download deleted'))
-    
+    if (!response.ok || data.status === 'error') {
+      throw new Error(data.error || data.message || 'Failed to delete download')
+    }
+
+    if (data.fileDeleted) {
+      helper.message(t('vapor', 'Download and file deleted'))
+    } else {
+      helper.warn(t('vapor', 'Removed from list — file was not found on disk'))
+    }
+
     // Refresh downloads list
     await fetchDownloads('complete')
     displayDownloads.value = downloads.value.complete || []
   } catch (error) {
     console.error('Failed to delete download:', error)
-    helper.error(t('vapor', 'Failed to delete download'))
+    helper.error(t('vapor', 'Failed to delete download: ') + error.message)
   } finally {
     actionLoading.value[gid] = false
   }
 }
+
+
 
 const loadDownloads = async () => {
   loading.value = true

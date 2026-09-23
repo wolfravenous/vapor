@@ -336,13 +336,14 @@ class DownloadsController extends Controller
     }
 
     /**
-     * Delete a completed download: removes the file from storage,
-     * updates the Nextcloud file cache, cleans up DB + aria2 result
+     * Delete a completed download: removes the file from the user's configured
+     * download location, rescans that folder, cleans up DB + aria2 result
      * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function deleteDownload(string $gid)
     {
+        $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
         try {
             if (!$this->userId) {
                 return new JSONResponse(
@@ -351,7 +352,6 @@ class DownloadsController extends Controller
                 );
             }
 
-            // Ownership guard: if we have a DB record for this gid, it must belong to this user
             $row = $this->dbHelper->getByGid($gid);
             if ($row && ($row['uid'] ?? null) !== $this->userId) {
                 return new JSONResponse(
@@ -360,36 +360,111 @@ class DownloadsController extends Controller
                 );
             }
 
-            // 1. Resolve file path(s) BEFORE removing the aria2 result
-            $paths = $this->getDownloadPaths($gid, $row);
+            // The user's chosen download location — SAME source the daemon uses
+            $realDownloadDir = Helper::getLocalFolder(Helper::getDownloadDir());
 
-            // 2. Delete via Nextcloud Files API (disk + cache in one step)
-            $root = \OC::$server->get(\OCP\Files\IRootFolder::class);
-            $userFolder = $root->getUserFolder($this->userId);
-            $fileDeleted = false;
-
-            foreach ($paths as $filePath) {
-                if (!$filePath || !file_exists($filePath)) {
-                    continue;
-                }
-                $relativePath = $userFolder->getRelativePath($filePath);
-                if (!$relativePath) {
-                    continue; // outside user's folder - refuse to touch it
-                }
-                try {
-                    $userFolder->get($relativePath)->delete();
-                    $fileDeleted = true;
-                } catch (\OCP\Files\NotFoundException $e) {
-                    // Known to PHP but not to Nextcloud: plain unlink fallback
-                    @unlink($filePath);
-                    $fileDeleted = true;
-                }
+            // Candidate absolute paths, best first:
+            // 1) DB record: filename + user's download dir (covers ytdl too)
+            // 2) aria2's own metadata (covers torrents / renamed files / missing DB rows)
+            $paths = [];
+            if ($row && !empty($row['filename']) && $row['filename'] !== 'unknown') {
+                $paths[] = rtrim($realDownloadDir, '/') . '/' . $row['filename'];
             }
+            foreach ($this->getAria2Paths($gid) as $p) {
+                $paths[] = $p;
+            }
+            $paths = array_values(array_unique(array_filter($paths)));
+            $logger->warning('VAPOR DELETE: gid=' . $gid . ' | realDownloadDir=' . $realDownloadDir
+                . ' | candidates=' . json_encode($paths));
+            
 
-            // 3. Remove the DB record (covers both aria2 and ytdl downloads)
+$root = \OC::$server->get(\OCP\Files\IRootFolder::class);
+$userFolder = $root->getUserFolder($this->userId);
+$fileDeleted = false;
+
+// Real on-disk root of this user's files (e.g. /var/www/nextcloud/data/steve/files).
+// This is authoritative — unlike $userFolder->getPath(), which returns the
+// logical path (/steve/files) and cannot be compared to filesystem paths.
+$storage = $userFolder->getStorage();
+$realBase = $storage->getLocalFile('');
+if ($realBase === false || $realBase === null || $realBase === '') {
+    $logger->warning('VAPOR DELETE: storage has no local base path; aborting file removal');
+    $realBase = null;
+} else {
+    $realBase = rtrim($realBase, '/').'/files';   //<-- append /files
+    $logger->warning('VAPOR DELETE: realBase=' . $realBase);
+}
+
+foreach ($paths as $filePath) {
+    $logger->warning('VAPOR DELETE: checking path: ' . $filePath
+        . ' | exists=' . (file_exists($filePath) ? 'YES' : 'NO'));
+
+    if ($realBase === null || !file_exists($filePath)) {
+        continue;
+    }
+
+    $fileReal = realpath($filePath);
+    if ($fileReal === false) {
+        $logger->warning('VAPOR DELETE: realpath failed for ' . $filePath);
+        continue;
+    }
+
+    // Must live strictly inside the user's files root — never touch anything else.
+    if (strpos($fileReal, $realBase . DIRECTORY_SEPARATOR) !== 0) {
+        $logger->warning('VAPOR DELETE: refusing, outside user folder: ' . $fileReal);
+        continue;
+    }
+
+    $relativePath = ltrim(substr($fileReal, strlen($realBase)), DIRECTORY_SEPARATOR);
+    $logger->warning('VAPOR DELETE: deleting relative=' . $relativePath
+        . ' real=' . $fileReal);
+
+    try {
+        $userFolder->get($relativePath)->delete();  // disk + filecache, atomically
+        $fileDeleted = true;
+    } catch (\OCP\Files\NotFoundException $e) {
+        // Not in the filecache (e.g. filename on disk != cache entry).
+        // Delete from disk; the rescan below will purge the cache.
+        if (@unlink($fileReal)) {
+            $fileDeleted = true;
+        } else {
+            $logger->warning('VAPOR DELETE: unlink failed for ' . $fileReal);
+        }
+    } catch (\Throwable $e) {
+        $logger->warning('VAPOR DELETE: node delete threw: ' . $e->getMessage()
+            . ' — falling back to unlink');
+        if (@unlink($fileReal)) {
+            $fileDeleted = true;
+        }
+    }
+}
+
+
+
+
+            // Rescan the download folder so NC Files drops the entry even in
+            // the unlikely event the delete path above missed the cache
+
+
+try {
+    if ($realBase !== null) {
+        $realDir = realpath($realDownloadDir);
+        if ($realDir !== false && strpos($realDir, $realBase . DIRECTORY_SEPARATOR) === 0) {
+            $relativeFolder = ltrim(substr($realDir, strlen($realBase)), DIRECTORY_SEPARATOR);
+            if ($relativeFolder !== '') {
+                $userFolder->getStorage()->getScanner()->scan($relativeFolder, true);
+                $logger->warning('VAPOR DELETE: rescanned folder=' . $relativeFolder);
+            }
+        } else {
+            $logger->warning('VAPOR DELETE: folder not under user base, skipping rescan');
+        }
+    }
+} catch (\Exception $e) {
+    $logger->warning('VAPOR DELETE: folder rescan failed: ' . $e->getMessage());
+}
+
+
             $this->dbHelper->deleteByGid($gid);
-
-            // 4. Evict from aria2's stopped-result list (best effort - ytdl gids will fail here)
             $this->aria2->removeDownloadResult($gid);
 
             return new JSONResponse([
@@ -400,6 +475,7 @@ class DownloadsController extends Controller
                     : 'Download removed from list (no file found on disk)',
             ]);
         } catch (\Exception $e) {
+            $logger->warning('VAPOR DELETE: EXCEPTION ' . $e->getMessage());
             return new JSONResponse(
                 ['error' => 'Exception: ' . $e->getMessage()],
                 \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
@@ -408,13 +484,11 @@ class DownloadsController extends Controller
     }
 
     /**
-     * Resolve absolute file path(s) for a gid
+     * Absolute file path(s) reported by aria2 for a gid
      */
-    private function getDownloadPaths(string $gid, $row = null): array
+    private function getAria2Paths(string $gid): array
     {
         $paths = [];
-
-        // Try aria2 first (completed downloads stay queryable until removeDownloadResult)
         try {
             $status = $this->aria2->tellStatus($gid);
             $info = is_array($status) ? reset($status) : [];
@@ -424,21 +498,14 @@ class DownloadsController extends Controller
                 if ($p === '') {
                     continue;
                 }
-                // Multi-file torrents may return paths relative to the download dir
                 if ($p[0] !== '/' && $dir !== '') {
                     $p = rtrim($dir, '/') . '/' . ltrim($p, '/');
                 }
                 $paths[] = $p;
             }
         } catch (\Exception $e) {
-            // not an aria2 gid (e.g. ytdl) - fall through
+            // not an aria2 gid (e.g. ytdl)
         }
-
-        // Fallback for ytdl: resolve via the DB record's filename
-        if (empty($paths) && $row && !empty($row['filename']) && $row['filename'] !== 'unknown') {
-            $paths[] = rtrim(Helper::getDownloadDir(), '/') . '/' . $row['filename'];
-        }
-
         return $paths;
     }
 
