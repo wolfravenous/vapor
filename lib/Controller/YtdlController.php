@@ -108,6 +108,25 @@ class YtdlController extends Controller
         $yt->dbDlPath = Helper::getDownloadDir();
         $resp = $yt->forceIPV4()->download($url);
         folderScan::sync(true);
+
+
+    // Save to database for delete/tracking
+    if (isset($resp['gid']) && !isset($resp['error'])) {
+        $filename = Helper::getFileName($url);
+        $data = [
+            'uid' => $this->uid,
+            'gid' => $resp['gid'],
+            'type' => 2, // ytdl type
+            'filename' => $filename ?? 'unknown',
+            'timestamp' => time(),
+            'data' => serialize(['link' => $url, 'ext' => $extension]),
+        ];
+        $this->dbconn->save($data);
+    }
+
+
+
+
         return new JSONResponse($resp);
     }
     private function downloadUrlSite($url)
