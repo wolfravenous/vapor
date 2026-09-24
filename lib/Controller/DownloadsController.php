@@ -10,6 +10,8 @@ use OCA\Vapor\Aria2\Aria2;
 use OCA\Vapor\Ytdl\Ytdl;
 use OCA\Vapor\Db\Helper as DbHelper;
 use OCA\Vapor\Tools\Helper;
+use OCP\IUserSession;
+use OCP\IGroupManager;
 
 class DownloadsController extends Controller
 {
@@ -17,6 +19,8 @@ class DownloadsController extends Controller
     private $ytdl;
     private $dbHelper;
     private $userId;
+    private $userSession;
+    private $groupManager;
 
     public function __construct(
         string $appName,
@@ -24,13 +28,17 @@ class DownloadsController extends Controller
         Aria2 $aria2,
         Ytdl $ytdl,
         DbHelper $dbHelper,
-        ?string $userId
+        ?string $userId,
+        IUserSession $userSession,
+        IGroupManager $groupManager
     ) {
         parent::__construct($appName, $request);
         $this->aria2 = $aria2;
         $this->ytdl = $ytdl;
         $this->dbHelper = $dbHelper;
         $this->userId = $userId;
+        $this->userSession = $userSession;
+        $this->groupManager = $groupManager;
     }
 
     /**
@@ -213,7 +221,7 @@ class DownloadsController extends Controller
                 );
             }
 
-            $this->aria2->startDaemon();
+            $this->aria2->start();
             
             return new JSONResponse([
                 'status' => 'success',
@@ -243,7 +251,7 @@ class DownloadsController extends Controller
                 );
             }
 
-            $this->aria2->stopDaemon();
+            $this->aria2->stop();
             
             return new JSONResponse([
                 'status' => 'success',
@@ -285,12 +293,14 @@ class DownloadsController extends Controller
      */
     private function isAdmin(): bool
     {
-        $user = \OC::$server->getUserSession()->getUser();
+        $user = $this->userSession->getUser();
         if (!$user) {
             return false;
         }
-        return \OC::$server->getGroupManager()->isAdmin($user->getUID());
+        return $this->groupManager->isAdmin($user->getUID());
     }
+
+
 
     /**
      * Cancel/Remove a download
