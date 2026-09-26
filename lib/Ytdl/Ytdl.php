@@ -168,7 +168,19 @@ class Ytdl
             }
         });
         
+ \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+            'VAPOR YTDL: process done, successful=' . var_export($process->isSuccessful(), true)
+            . ' exitcode=' . $process->getExitCode()
+            . ' gid=' . var_export($this->helper->gid ?? null, true)
+        );
+
         if ($process->isSuccessful()) {
+
+            \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                'VAPOR YTDL: process successful, gid=' . var_export($this->helper->gid ?? null, true)
+                . ' file=' . var_export($this->helper->file ?? null, true)
+            );
+
             $this->helper->updateStatus(Helper::STATUS['COMPLETE']);
         
             // === Save in Nextcloud immediatly ===

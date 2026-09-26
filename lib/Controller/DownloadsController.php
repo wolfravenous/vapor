@@ -183,12 +183,25 @@ class DownloadsController extends Controller
             // Map database status codes to string status
             $downloads = [];
             foreach ($records as $record) {
-                $dbStatus = (int) ($record['status'] ?? 1);
-                
-                // Map status codes: 1=waiting, 2=active, 3=complete, 4=error
-                $statusMap = [1 => 'waiting', 2 => 'active', 3 => 'complete', 4 => 'failed'];
+               
+
+
+                $dbStatus = (int) ($record['status'] ?? Helper::STATUS['ACTIVE']);
+
+                // Map DB status codes using the authoritative constant map
+                // from OCA\Vapor\Tools\Helper::STATUS.
+                // ACTIVE=1, PAUSED=2, COMPLETE=3, WAITING=4, ERROR=5
+                $statusMap = [
+                    Helper::STATUS['ACTIVE']   => 'active',
+                    Helper::STATUS['PAUSED']   => 'paused',
+                    Helper::STATUS['COMPLETE'] => 'complete',
+                    Helper::STATUS['WAITING']  => 'waiting',
+                    Helper::STATUS['ERROR']    => 'failed',
+                ];
                 $mappedStatus = $statusMap[$dbStatus] ?? 'unknown';
-                
+
+
+ 
                 if ($mappedStatus === $status) {
                     $downloads[] = [
                         'gid' => $record['gid'] ?? '',
