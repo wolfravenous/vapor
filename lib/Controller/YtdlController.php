@@ -84,15 +84,31 @@ class YtdlController extends Controller
     /**
      * @NoAdminRequired
      */
+
+
     public function Download(string $url, ?string $extension = "mp4")
     {
         $dlDir = $this->ytdl->getDownloadDir();
         if (!is_writable($dlDir)) {
             return new JSONResponse(['error' => sprintf("%s is not writable", $dlDir)]);
         }
-        //$url = trim($this->request->getParam('text-input-value'));
         $url = trim($url);
-	$yt = $this->ytdl;
+
+        // Strip YouTube "Mix"/"Radio" playlist params so yt-dlp downloads only the single video.
+if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
+    $parts = parse_url($url);
+    if (!empty($parts['query'])) {
+        parse_str($parts['query'], $query);
+        unset($query['list'], $query['start_radio'], $query['index'], $query['playnext']);
+        $parts['query'] = http_build_query($query);
+        $url = $parts['scheme'] . '://' . $parts['host']
+             . ($parts['path'] ?? '')
+             . ($parts['query'] ? '?' . $parts['query'] : '');
+    }
+}
+
+
+        $yt = $this->ytdl;
         if (in_array($extension, $this->audio_extensions)) {
             $yt->audioOnly = true;
             $yt->audioFormat = $extension;
@@ -105,30 +121,68 @@ class YtdlController extends Controller
         if (Helper::isGetUrlSite($url)) {
             return new JSONResponse($this->downloadUrlSite($url));
         }
+
+        // Stage 1: pre-flight id lookup so we can insert the row immediately.
+        $id = $yt->getId($url);
+        if (!$id) {
+            return new JSONResponse(['error' => 'Could not determine video id from URL']);
+        }
+        $gid = Helper::generateGID($id);
+        $filename = Helper::getFileName($url) ?: 'unknown';
+
+        // Insert row with status=ACTIVE before the download runs.
+        $this->dbconn->save([
+            'uid' => $this->uid,
+            'gid' => $gid,
+            'type' => Helper::DOWNLOADTYPE['YOUTUBE-DL'],
+            'filename' => $filename,
+            'status' => Helper::STATUS['ACTIVE'],
+            'timestamp' => time(),
+            'data' => serialize(['link' => $url, 'ext' => $extension]),
+        ]);
+
+        \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+            'VAPOR YTDL: pre-inserted row gid=' . $gid . ' id=' . $id . ' filename=' . $filename
+        );
+
+        // Build the response BEFORE starting the download.
+        $response = new JSONResponse([
+            'status' => 'success',
+            'gid' => $gid,
+            'filename' => $filename,
+        ]);
+
+        // Flush the response to the browser now; keep running on the worker.
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+
+        // Now actually run the download. Helper::run() inside will:
+        //   - set the same gid (md5 of the same id) — no-op insert
+        //   - update progress on each line
+        //   - flip status to COMPLETE on success
         $yt->dbDlPath = Helper::getDownloadDir();
         $resp = $yt->forceIPV4()->download($url);
         folderScan::sync(true);
 
+        \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+            'VAPOR YTDL: download finished for gid=' . $gid
+            . ' result=' . json_encode($resp)
+        );
 
-    // Save to database for delete/tracking
-    if (isset($resp['gid']) && !isset($resp['error'])) {
-        $filename = Helper::getFileName($url);
-        $data = [
-            'uid' => $this->uid,
-            'gid' => $resp['gid'],
-            'type' => 2, // ytdl type
-            'filename' => $filename ?? 'unknown',
-            'timestamp' => time(),
-            'data' => serialize(['link' => $url, 'ext' => $extension]),
-        ];
-        $this->dbconn->save($data);
+        return $response;
     }
 
 
 
 
-        return new JSONResponse($resp);
-    }
+
+
+
+
+
+
+
     private function downloadUrlSite($url)
     {
         $yt = $this->ytdl;

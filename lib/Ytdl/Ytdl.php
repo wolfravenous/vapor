@@ -147,9 +147,19 @@ class Ytdl
             }
         }
         $this->helper = YtdHelper::create();
+
+\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+    'VAPOR YTDL DEBUG: helper created, spl_object_id=' . spl_object_id($this->helper)
+);
+
+
         $this->downloadDir = $this->downloadDir ?? $this->defaultDir;
         $this->setOption("--output", $this->downloadDir . "/" . $this->outTpl);
         $this->setUrl($url);
+
+
+        $this->addOption('--no-playlist');
+
         $this->prependOption($this->bin);
         $process = new Process($this->options, null, $this->env);
         $process->setTimeout($this->timeout);
@@ -173,6 +183,14 @@ class Ytdl
             . ' exitcode=' . $process->getExitCode()
             . ' gid=' . var_export($this->helper->gid ?? null, true)
         );
+
+
+\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+    'VAPOR YTDL DEBUG: about to check success, spl_object_id=' . spl_object_id($this->helper)
+    . ' gid=' . var_export($this->helper->gid ?? null, true)
+);
+
+
 
         if ($process->isSuccessful()) {
 
@@ -229,6 +247,12 @@ class Ytdl
 
     public function onOutput($buffer, $extra)
     {
+
+\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+        'VAPOR YTDL DEBUG: onOutput called, spl_object_id=' . spl_object_id($this->helper)
+    );
+
+
         $this->helper->run($buffer, $extra);
     }
     public function getDownloadUrl($url)
@@ -330,6 +354,30 @@ class Ytdl
         }
         return false;
     }
+
+    /**
+     * Fetch the site-specific video id for a URL without downloading.
+     * Used to pre-compute the gid so the row can be inserted before
+     * yt-dlp starts streaming.
+     */
+    public function getId(string $url): ?string
+    {
+        $process = new Process([$this->bin, '--no-playlist', '--print', 'id', $url]);
+        $process->setTimeout(30);
+        $process->run();
+        if (!$process->isSuccessful()) {
+            \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                'VAPOR YTDL getId: failed for ' . $url
+                . ' stderr=' . substr($process->getErrorOutput(), 0, 300)
+            );
+            return null;
+        }
+        $id = trim($process->getOutput());
+        return $id !== '' ? $id : null;
+    }
+
+
+
     public function check()
     {
         if ($tagName = Helper::getLatestRelease('yt-dlp', 'yt-dlp')) {

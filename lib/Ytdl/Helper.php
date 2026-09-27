@@ -112,6 +112,12 @@ class Helper
         }
 
         \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+            'VAPOR YTDL HELPER DEBUG: after gid assignment, spl_object_id=' . spl_object_id($this)
+            . ' gid=' . var_export($this->gid, true)
+        );
+
+
+        \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
             'VAPOR YTDL HELPER: run() buffer-head=' . substr(str_replace("\n", '\\n', $buffer), 0, 120)
             . ' siteInfo=' . var_export($info, true)
             . ' gid=' . var_export($this->gid, true)
