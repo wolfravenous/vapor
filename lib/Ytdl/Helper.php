@@ -111,11 +111,13 @@ class Helper
             $this->gid = ToolsHelper::generateGID($extra["link"]);
         }
 
-        \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-            'VAPOR YTDL HELPER DEBUG: after gid assignment, spl_object_id=' . spl_object_id($this)
-            . ' gid=' . var_export($this->gid, true)
-        );
-
+\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+    'VAPOR YTDL HELPER DEBUG: after gid assignment'
+    . ' class=' . get_class($this)
+    . ' spl_object_id=' . spl_object_id($this)
+    . ' gid=' . var_export($this->gid, true)
+    . ' all_props=' . json_encode(get_object_vars($this))
+);
 
         \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
             'VAPOR YTDL HELPER: run() buffer-head=' . substr(str_replace("\n", '\\n', $buffer), 0, 120)

@@ -122,13 +122,17 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
             return new JSONResponse($this->downloadUrlSite($url));
         }
 
-        // Stage 1: pre-flight id lookup so we can insert the row immediately.
-        $id = $yt->getId($url);
-        if (!$id) {
+
+
+        // Pre-flight: fetch the video id and title from yt-dlp so we can insert
+        // the row with the real filename before the download starts.
+        $meta = $yt->getIdAndTitle($url);
+        if (!$meta['id']) {
             return new JSONResponse(['error' => 'Could not determine video id from URL']);
         }
-        $gid = Helper::generateGID($id);
-        $filename = Helper::getFileName($url) ?: 'unknown';
+        $gid = Helper::generateGID($meta['id']);
+        $filename = $meta['title'] ?: 'unknown';
+
 
         // Insert row with status=ACTIVE before the download runs.
         $this->dbconn->save([
@@ -152,10 +156,6 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
             'filename' => $filename,
         ]);
 
-        // Flush the response to the browser now; keep running on the worker.
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        }
 
         // Now actually run the download. Helper::run() inside will:
         //   - set the same gid (md5 of the same id) — no-op insert

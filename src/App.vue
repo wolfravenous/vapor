@@ -95,17 +95,6 @@ export default {
         helper.info(message)
       }
       
-      // Optimistically add download to store
-      const { addDownload } = useDownloads()
-      const optimisticDownload = {
-        id: Date.now(),
-        filename: formData['text-input-value'].split('/').pop(),
-        status: 'active',
-        url: formData['text-input-value'],
-        progress: 0,
-        timestamp: new Date().toISOString()
-      }
-      addDownload(optimisticDownload)
 
       let url = formWrapper.getAttribute('action')
       console.log('Form action attribute:', url)

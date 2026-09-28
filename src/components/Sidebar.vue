@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
@@ -77,8 +77,19 @@ const toggleSettings = () => {
   settingsOpen.value = !settingsOpen.value
 }
 
-// Fetch initial counters
-fetchCounters()
+let countersInterval = null
+
+onMounted(() => {
+  fetchCounters()
+  countersInterval = setInterval(fetchCounters, 3000)
+})
+
+onUnmounted(() => {
+  if (countersInterval) {
+    clearInterval(countersInterval)
+  }
+})
+
 </script>
 
 <style scoped lang="scss">
