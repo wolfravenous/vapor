@@ -49,6 +49,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
@@ -60,6 +61,9 @@ const loading = ref(true)
 const displayDownloads = ref([])
 const actionLoading = ref({})
 let pollInterval = null
+
+// Track gids we've seen in Active, so we can detect when they finish.
+const knownActiveGids = ref(new Set())
 
 const formatBytes = (bytes) => {
   if (!bytes) return '0 B'
@@ -80,17 +84,16 @@ const cancelDownload = async (gid) => {
     const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/cancel`), {
       method: 'POST'
     })
-    
     if (!response.ok) {
       throw new Error('Failed to cancel download')
     }
-    
-    const data = await response.json()
+    await response.json()
     helper.message(t('vapor', 'Download cancelled'))
-    
-    // Refresh downloads list
     await fetchDownloads('active')
     displayDownloads.value = downloads.value.active || []
+    // The cancelled download is no longer expected to complete; forget it.
+    knownActiveGids.value.delete(gid)
+    knownActiveGids.value = new Set(knownActiveGids.value)
   } catch (error) {
     console.error('Failed to cancel download:', error)
     helper.error(t('vapor', 'Failed to cancel download'))
@@ -99,11 +102,35 @@ const cancelDownload = async (gid) => {
   }
 }
 
+const refreshDownloads = async () => {
+  await fetchDownloads('active')
+  await fetchDownloads('complete')
+
+  const activeList = downloads.value.active || []
+  const completeList = downloads.value.complete || []
+  displayDownloads.value = activeList
+
+  // Detect completions: gids that were active before, and are now in Complete.
+  const activeGidsNow = new Set(activeList.map(d => d.gid))
+  const completeGidsNow = new Set(completeList.map(d => d.gid))
+  for (const gid of knownActiveGids.value) {
+    if (!activeGidsNow.has(gid) && completeGidsNow.has(gid)) {
+      const finished = completeList.find(d => d.gid === gid)
+      const name = finished?.filename || 'Download'
+        helper.info(
+          t('vapor', 'Download Successful! ') + name + t('vapor', ' moved to Completed Downloads.'),
+          7000
+      ) 
+      
+    }
+  }
+  knownActiveGids.value = activeGidsNow
+}
+
 const loadDownloads = async () => {
   loading.value = true
   try {
-    await fetchDownloads('active')
-    displayDownloads.value = downloads.value.active || []
+    await refreshDownloads()
   } catch (error) {
     console.error('Failed to load active downloads:', error)
     displayDownloads.value = []
@@ -113,23 +140,19 @@ const loadDownloads = async () => {
 }
 
 onMounted(async () => {
-  // Load initial data
   await loadDownloads()
-  
-  // Poll for updates every 2 seconds
-  pollInterval = setInterval(async () => {
-    await fetchDownloads('active')
-    displayDownloads.value = downloads.value.active || []
-  }, 2000)
+  pollInterval = setInterval(refreshDownloads, 2000)
 })
 
 onUnmounted(() => {
-  // Clean up interval on component unmount
   if (pollInterval) {
     clearInterval(pollInterval)
   }
 })
 </script>
+
+
+
 
 <style scoped lang="scss">
 .app-content-list {

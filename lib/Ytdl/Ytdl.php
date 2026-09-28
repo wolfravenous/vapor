@@ -147,9 +147,19 @@ class Ytdl
             }
         }
         $this->helper = YtdHelper::create();
+
+\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+    'VAPOR YTDL DEBUG: helper created, spl_object_id=' . spl_object_id($this->helper)
+);
+
+
         $this->downloadDir = $this->downloadDir ?? $this->defaultDir;
         $this->setOption("--output", $this->downloadDir . "/" . $this->outTpl);
         $this->setUrl($url);
+
+
+        $this->addOption('--no-playlist');
+
         $this->prependOption($this->bin);
         $process = new Process($this->options, null, $this->env);
         $process->setTimeout($this->timeout);
@@ -168,7 +178,36 @@ class Ytdl
             }
         });
         
+ \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+            'VAPOR YTDL: process done, successful=' . var_export($process->isSuccessful(), true)
+            . ' exitcode=' . $process->getExitCode()
+            . ' gid=' . var_export($this->helper->gid ?? null, true)
+        );
+
+
+\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+    'VAPOR YTDL DEBUG: helper state at end'
+    . ' class=' . get_class($this->helper)
+    . ' spl_object_id=' . spl_object_id($this->helper)
+    . ' all_props=' . json_encode(get_object_vars($this->helper))
+);
+
+
+
+\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+    'VAPOR YTDL DEBUG: about to check success, spl_object_id=' . spl_object_id($this->helper)
+    . ' gid=' . var_export($this->helper->gid ?? null, true)
+);
+
+
+
         if ($process->isSuccessful()) {
+
+            \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                'VAPOR YTDL: process successful, gid=' . var_export($this->helper->gid ?? null, true)
+                . ' file=' . var_export($this->helper->file ?? null, true)
+            );
+
             $this->helper->updateStatus(Helper::STATUS['COMPLETE']);
         
             // === Save in Nextcloud immediatly ===
@@ -217,6 +256,12 @@ class Ytdl
 
     public function onOutput($buffer, $extra)
     {
+
+\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+        'VAPOR YTDL DEBUG: onOutput called, spl_object_id=' . spl_object_id($this->helper)
+    );
+
+
         $this->helper->run($buffer, $extra);
     }
     public function getDownloadUrl($url)
@@ -318,6 +363,41 @@ class Ytdl
         }
         return false;
     }
+
+
+    /**
+     * Fetch the site-specific video id and title for a URL, without downloading.
+     * Used to pre-compute the gid and display name so the row can be inserted
+     * with the real filename before yt-dlp starts downloading.
+     */
+    public function getIdAndTitle(string $url): array
+    {
+        $process = new Process([
+            $this->bin,
+            '--no-playlist',
+            '--print', 'id',
+            '--print', 'title',
+            $url,
+        ]);
+        $process->setTimeout(60);
+        $process->run();
+        if (!$process->isSuccessful()) {
+            \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                'VAPOR YTDL getIdAndTitle: failed for ' . $url
+                . ' stderr=' . substr($process->getErrorOutput(), 0, 300)
+            );
+            return ['id' => null, 'title' => null];
+        }
+        $lines = array_values(array_filter(explode("\n", trim($process->getOutput())), 'strlen'));
+        if (count($lines) < 2) {
+            return ['id' => null, 'title' => null];
+        }
+        return ['id' => $lines[0], 'title' => $lines[1]];
+    }
+
+
+
+
     public function check()
     {
         if ($tagName = Helper::getLatestRelease('yt-dlp', 'yt-dlp')) {

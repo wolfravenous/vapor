@@ -183,12 +183,25 @@ class DownloadsController extends Controller
             // Map database status codes to string status
             $downloads = [];
             foreach ($records as $record) {
-                $dbStatus = (int) ($record['status'] ?? 1);
-                
-                // Map status codes: 1=waiting, 2=active, 3=complete, 4=error
-                $statusMap = [1 => 'waiting', 2 => 'active', 3 => 'complete', 4 => 'failed'];
+               
+
+
+                $dbStatus = (int) ($record['status'] ?? Helper::STATUS['ACTIVE']);
+
+                // Map DB status codes using the authoritative constant map
+                // from OCA\Vapor\Tools\Helper::STATUS.
+                // ACTIVE=1, PAUSED=2, COMPLETE=3, WAITING=4, ERROR=5
+                $statusMap = [
+                    Helper::STATUS['ACTIVE']   => 'active',
+                    Helper::STATUS['PAUSED']   => 'paused',
+                    Helper::STATUS['COMPLETE'] => 'complete',
+                    Helper::STATUS['WAITING']  => 'waiting',
+                    Helper::STATUS['ERROR']    => 'failed',
+                ];
                 $mappedStatus = $statusMap[$dbStatus] ?? 'unknown';
-                
+
+
+ 
                 if ($mappedStatus === $status) {
                     $downloads[] = [
                         'gid' => $record['gid'] ?? '',
@@ -302,11 +315,6 @@ class DownloadsController extends Controller
 
 
 
-    /**
-     * Cancel/Remove a download
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     */
 
     /**
      * Cancel/Remove a download
@@ -323,13 +331,33 @@ class DownloadsController extends Controller
                 );
             }
 
-            // Remove download via aria2
-            $result = $this->aria2->remove($gid);
-            
-            if ($result === true || (is_array($result) && isset($result['result']) && $result['result'] === 'OK')) {
+            $row = $this->dbHelper->getByGid($gid);
+            if ($row && ($row['uid'] ?? null) !== $this->userId) {
+                return new JSONResponse(
+                    ['error' => 'Not authorized to cancel this download'],
+                    \OCP\AppFramework\Http::STATUS_FORBIDDEN
+                );
+            }
+            $type = $row ? (int) ($row['type'] ?? 0) : 0;
+
+            // ytdl downloads are not managed by aria2; cancel them by
+            // clearing the DB row. (Killing the actual yt-dlp process is
+            // a follow-up; see comment in the code.)
+            if ($type === Helper::DOWNLOADTYPE['YOUTUBE-DL']) {
+                $this->dbHelper->deleteByGid($gid);
                 return new JSONResponse([
                     'status' => 'success',
-                    'message' => 'Download cancelled'
+                    'message' => 'Download cancelled',
+                ]);
+            }
+
+            // aria2 download
+            $result = $this->aria2->remove($gid);
+            if ($result === true || (is_array($result) && isset($result['result']) && $result['result'] === 'OK')) {
+                $this->dbHelper->deleteByGid($gid);
+                return new JSONResponse([
+                    'status' => 'success',
+                    'message' => 'Download cancelled',
                 ]);
             }
 
@@ -344,6 +372,13 @@ class DownloadsController extends Controller
             );
         }
     }
+
+
+
+
+
+
+
 
     /**
      * Delete a completed download: removes the file from the user's configured
