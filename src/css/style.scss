@@ -205,3 +205,21 @@
 #app-vapor-wrapper > #app-navigation:not(.vue) > ul > li > a {
     padding: 0 12px 0 34px;
 }
+
+
+
+// Temporary: darken Vapor's backgrounds for easier visual testing.
+// TODO: remove this when the NcAppNavigation refactor lands and we adopt
+// the library's default theming.
+#app-content,
+#app-content .app-content {
+  background-color: #1e1e1e;
+}
+
+.app-container {
+  background-color: #1e1e1e;
+}
+
+.sidebar {
+  background-color: #1a1a1a;
+}
