@@ -39,7 +39,7 @@ class MainController extends Controller
     private $ytdl;
     private $accessDenied;
 
-    public function __construct($appName, IRequest $request, $userId, IL10N $IL10N, Aria2 $aria2, Ytdl $ytdl)
+    public function __construct(string $appName, IRequest $request, ?string $userId, IL10N $IL10N, Aria2 $aria2, Ytdl $ytdl)
     {
 
         parent::__construct($appName, $request);
