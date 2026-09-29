@@ -148,12 +148,6 @@ class Ytdl
         }
         $this->helper = YtdHelper::create();
 
-\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-    'VAPOR YTDL DEBUG: helper created, spl_object_id=' . spl_object_id($this->helper)
-);
-
-
-        $this->downloadDir = $this->downloadDir ?? $this->defaultDir;
         $this->setOption("--output", $this->downloadDir . "/" . $this->outTpl);
         $this->setUrl($url);
 
@@ -181,31 +175,15 @@ class Ytdl
  \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
             'VAPOR YTDL: process done, successful=' . var_export($process->isSuccessful(), true)
             . ' exitcode=' . $process->getExitCode()
-            . ' gid=' . var_export($this->helper->gid ?? null, true)
+            . ' gid=' . var_export($this->helper->getGid(), true)
         );
-
-
-\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-    'VAPOR YTDL DEBUG: helper state at end'
-    . ' class=' . get_class($this->helper)
-    . ' spl_object_id=' . spl_object_id($this->helper)
-    . ' all_props=' . json_encode(get_object_vars($this->helper))
-);
-
-
-
-\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-    'VAPOR YTDL DEBUG: about to check success, spl_object_id=' . spl_object_id($this->helper)
-    . ' gid=' . var_export($this->helper->gid ?? null, true)
-);
-
 
 
         if ($process->isSuccessful()) {
 
             \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-                'VAPOR YTDL: process successful, gid=' . var_export($this->helper->gid ?? null, true)
-                . ' file=' . var_export($this->helper->file ?? null, true)
+                'VAPOR YTDL: process successful, gid=' . var_export($this->helper->getGid(), true)
+                . ' file=' . var_export($this->helper->getFile(), true)
             );
 
             $this->helper->updateStatus(Helper::STATUS['COMPLETE']);
@@ -256,12 +234,6 @@ class Ytdl
 
     public function onOutput($buffer, $extra)
     {
-
-\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-        'VAPOR YTDL DEBUG: onOutput called, spl_object_id=' . spl_object_id($this->helper)
-    );
-
-
         $this->helper->run($buffer, $extra);
     }
     public function getDownloadUrl($url)
