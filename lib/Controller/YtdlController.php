@@ -27,11 +27,11 @@ class YtdlController extends Controller
     private $tablename;
     private $dataDir;
 
-    public function __construct($appName, IRequest $request, $UserId, IL10N $IL10N, Aria2 $aria2, Ytdl $ytdl)
+    public function __construct($appName, IRequest $request, $userId, IL10N $IL10N, Aria2 $aria2, Ytdl $ytdl)
     {
         parent::__construct($appName, $request);
         $this->appName = $appName;
-        $this->uid = $UserId;
+        $this->uid = $userId;
 	// $this->urlGenerator = \OC::$server->getURLGenerator();
 	// BEGIN STEVE EDITS
         $this->urlGenerator = \OC::$server->get(\OCP\IURLGenerator::class);

@@ -33,6 +33,26 @@ class Helper
 
         return new static();
     }
+
+    /**
+     * Public accessor for the protected $gid property. Needed because
+     * Ytdl.php logs the gid after the download finishes, and reading
+     * a protected property from outside the class silently returns
+     * null via the ?? operator.
+     */
+    public function getGid(): ?string
+    {
+        return $this->gid;
+    }
+
+    public function getFile(): ?string
+    {
+        return $this->file;
+    }
+
+
+
+
     public function getDownloadInfo(string $output): ?array
     {
         $rules = '#\[(?<module>(download|ExtractAudio|VideoConvertor|Merger|ffmpeg))\]((\s+|\s+Converting.*;\s+)Destination:\s+|\s+Merging formats into\s+\")' .
@@ -110,21 +130,6 @@ class Helper
         if (!$this->gid) {
             $this->gid = ToolsHelper::generateGID($extra["link"]);
         }
-
-\OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-    'VAPOR YTDL HELPER DEBUG: after gid assignment'
-    . ' class=' . get_class($this)
-    . ' spl_object_id=' . spl_object_id($this)
-    . ' gid=' . var_export($this->gid, true)
-    . ' all_props=' . json_encode(get_object_vars($this))
-);
-
-        \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-            'VAPOR YTDL HELPER: run() buffer-head=' . substr(str_replace("\n", '\\n', $buffer), 0, 120)
-            . ' siteInfo=' . var_export($info, true)
-            . ' gid=' . var_export($this->gid, true)
-        );
-
 
 
         $downloadInfo = $this->getDownloadInfo($buffer);
