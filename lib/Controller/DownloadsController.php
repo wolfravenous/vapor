@@ -12,6 +12,8 @@ use OCA\Vapor\Db\Helper as DbHelper;
 use OCA\Vapor\Tools\Helper;
 use OCP\IUserSession;
 use OCP\IGroupManager;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 
 class DownloadsController extends Controller
 {
@@ -44,9 +46,9 @@ class DownloadsController extends Controller
     /**
      * Get downloads by status (combined Aria2 + Ytdl)
      * 
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function getByStatus(string $status = 'active'): JSONResponse
     {
         try {
@@ -80,9 +82,9 @@ class DownloadsController extends Controller
     /**
      * Get all downloads (all statuses combined)
      * 
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function getAll(): JSONResponse
     {
         try {
@@ -113,9 +115,9 @@ class DownloadsController extends Controller
     /**
      * Get counters for each status
      * 
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function getCounters(): JSONResponse
     {
         try {
@@ -221,9 +223,9 @@ class DownloadsController extends Controller
 
     /**
      * Start Aria2 daemon
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function startAria2()
     {
         try {
@@ -251,9 +253,9 @@ class DownloadsController extends Controller
 
     /**
      * Stop Aria2 daemon
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function stopAria2()
     {
         try {
@@ -281,9 +283,9 @@ class DownloadsController extends Controller
 
     /**
      * Get Aria2 daemon status
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function getAria2Status()
     {
         try {
@@ -318,9 +320,9 @@ class DownloadsController extends Controller
 
     /**
      * Cancel/Remove a download
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function cancelDownload(string $gid)
     {
         try {
@@ -383,9 +385,9 @@ class DownloadsController extends Controller
     /**
      * Delete a completed download: removes the file from the user's configured
      * download location, rescans that folder, cleans up DB + aria2 result
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function deleteDownload(string $gid)
     {
         $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
@@ -556,9 +558,9 @@ try {
 
     /**
      * Retry a failed download (Ytdl only)
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function retryDownload(string $gid)
     {
         try {
@@ -593,9 +595,9 @@ try {
 
     /**
      * Pause a download
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function pauseDownload(string $gid)
     {
         try {
@@ -629,9 +631,9 @@ try {
 
     /**
      * Resume a paused download
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function resumeDownload(string $gid)
     {
         try {

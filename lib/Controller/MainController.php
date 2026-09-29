@@ -17,6 +17,8 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OC_Util;
 use OCP\Util;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 
 class MainController extends Controller
 {
@@ -37,12 +39,12 @@ class MainController extends Controller
     private $ytdl;
     private $accessDenied;
 
-    public function __construct($appName, IRequest $request, $UserId, IL10N $IL10N, Aria2 $aria2, Ytdl $ytdl)
+    public function __construct($appName, IRequest $request, $userId, IL10N $IL10N, Aria2 $aria2, Ytdl $ytdl)
     {
 
         parent::__construct($appName, $request);
         $this->appName = $appName;
-        $this->uid = $UserId;
+        $this->uid = $userId;
         $this->l10n = $IL10N;
         //$this->rootFolder = $rootFolder;
         $this->aria2 = $aria2;
@@ -52,7 +54,7 @@ class MainController extends Controller
         $this->urlGenerator = \OC::$server->get(\OCP\IURLGenerator::class);
         // END STEVE EDITS
         $this->dbconn = new DbHelper();
-        $this->counters = new Counters($aria2, $this->dbconn, $UserId);
+        $this->counters = new Counters($aria2, $this->dbconn, $userId);
         $this->ytdl = $ytdl;
 	//$this->isAdmin = \OC_User::isAdminUser($this->uid);
 	// BEGIN STEVE EDITS
@@ -63,9 +65,9 @@ class MainController extends Controller
         $this->accessDenied = $this->l10n->t("Sorry,only admin users can download files via BT!");
     }
     /**
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function Index()
     {
         // $str = \OC::$server->getDatabaseConnection()->getInner()->getPrefix();
@@ -141,8 +143,8 @@ class MainController extends Controller
         return $params;
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function Download(string $url)
     {
         $dlDir = $this->aria2->getDownloadDir();
@@ -185,8 +187,8 @@ class MainController extends Controller
         return $resp;
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function Upload()
     {
         if ($this->disable_bt_nonadmin && !$this->isAdmin) {
@@ -217,8 +219,8 @@ class MainController extends Controller
     }
 
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function scanFolder()
     {
         $force = $this->request->getParam('force') ?? false;
@@ -226,8 +228,8 @@ class MainController extends Controller
         return new JSONResponse($resp);
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function getCounters(): JSONResponse
     {
         $counter = $this->counters->getCounters();

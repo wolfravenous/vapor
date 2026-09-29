@@ -11,6 +11,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 
 class YtdlController extends Controller
 {
@@ -45,9 +46,9 @@ class YtdlController extends Controller
         $this->tablename = $this->dbconn->queryBuilder->getTableName("vapor_info");
     }
     /**
-     * @NoAdminRequired
      *
      */
+    #[NoAdminRequired]
     public function Index()
     {
         $data = $this->dbconn->getYtdlByUid($this->uid);
@@ -82,10 +83,10 @@ class YtdlController extends Controller
         return new JSONResponse($resp);
     }
     /**
-     * @NoAdminRequired
      */
 
 
+    #[NoAdminRequired]
     public function Download(string $url, ?string $extension = "mp4")
     {
         $dlDir = $this->ytdl->getDownloadDir();
@@ -193,8 +194,8 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
         }
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function Delete(string $gid)
     {
         //$gid = $this->request->getParam('gid');
@@ -228,8 +229,8 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
         return new JSONResponse(['message' => $msg]);
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function Redownload(string $gid)
     {
         //$gid = $this->request->getParam('gid');

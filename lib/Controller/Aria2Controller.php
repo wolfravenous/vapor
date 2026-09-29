@@ -12,6 +12,7 @@ use OCP\Files\IRootFolder;
 use OCP\IL10N;
 use OCP\IRequest;
 use OC_Util;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 // BEGIN STEVE EDITS
 
 //use \OC\Files\Filesystem;
@@ -35,13 +36,13 @@ class Aria2Controller extends Controller
     private $downloadDir;
     private $urlGenerator;
     private $userFolder;
-    public function __construct($appName, IRequest $request, $UserId, IL10N $IL10N, IRootFolder $rootFolder, Aria2 $aria2)
+    public function __construct($appName, IRequest $request, $userId, IL10N $IL10N, IRootFolder $rootFolder, Aria2 $aria2)
     {
         parent::__construct($appName, $request);
-        $this->uid = $UserId;
+        $this->uid = $userId;
         $this->l10n = $IL10N;
 	$this->rootFolder = $rootFolder;
-	$this->userFolder = $rootFolder->getUserFolder($UserId);
+	$this->userFolder = $rootFolder->getUserFolder($userId);
 	// $this->urlGenerator = \OC::$server->getURLGenerator();
 	// BEGIN STEVE EDITS
         $this->urlGenerator = \OC::$server->get(\OCP\IURLGenerator::class);
@@ -52,12 +53,12 @@ class Aria2Controller extends Controller
         $this->aria2 = $aria2;
         $this->aria2->init();
         $this->dbconn = new DbHelper();
-        $this->counters = new Counters($aria2, $this->dbconn, $UserId);
+        $this->counters = new Counters($aria2, $this->dbconn, $userId);
        
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function Action($path)
     {
         $path = strtolower(trim($path));
@@ -143,8 +144,8 @@ class Aria2Controller extends Controller
         );
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function getStatus($path)
     {
         //$path = $this->request->getRequestUri();
