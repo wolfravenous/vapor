@@ -7,6 +7,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\Vapor\Tools\Helper;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 
 class SearchController extends Controller
 {
@@ -18,11 +19,11 @@ class SearchController extends Controller
     private $search;
 
 
-    public function __construct($appName, IRequest $request, $UserId)
+    public function __construct($appName, IRequest $request, $userId)
     {
         parent::__construct($appName, $request);
         $this->appName = $appName;
-        $this->uid = $UserId;
+        $this->uid = $userId;
 	// $this->urlGenerator = \OC::$server->getURLGenerator();
 	// BEGIN STEVE EDITS
         $this->urlGenerator = \OC::$server->get(\OCP\IURLGenerator::class);
@@ -30,8 +31,8 @@ class SearchController extends Controller
         $this->search = new siteSearch();
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function execute(string $keyword,string $site = "TPB")
     {
         $keyword = Helper::sanitize($keyword);

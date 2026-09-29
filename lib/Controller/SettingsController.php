@@ -8,6 +8,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IL10N;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 
 class SettingsController extends Controller
 {
@@ -29,8 +30,8 @@ class SettingsController extends Controller
     }
 
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function getSettings()
     {
         $name = $this->request->getParam("name");
@@ -40,8 +41,8 @@ class SettingsController extends Controller
     }
 
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function saveCustom()
     {
         $params = $this->request->getParams();
@@ -52,8 +53,8 @@ class SettingsController extends Controller
     }
 
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function getCustomAria2()
     {
         $data = json_decode($this->settings->get("custom_aria2_settings"));
@@ -92,8 +93,8 @@ class SettingsController extends Controller
         return new JSONResponse(Helper::getSettings("global_aria2_config", "", $this->settings::TYPE['SYSTEM']));
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function saveCustomAria2()
     {
         $noAria2Settings = (bool) Helper::getAdminSettings("disallow_aria2_settings");
@@ -107,8 +108,8 @@ class SettingsController extends Controller
         return new JSONResponse($resp);
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function deleteCustomAria2()
     {
         $saved = json_decode($this->settings->get("custom_aria2_settings"), 1);
@@ -122,16 +123,16 @@ class SettingsController extends Controller
     }
 
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function getYtdl()
     {
         $data = json_decode($this->settings->get("custom_ytdl_settings"));
         return new JSONResponse($data);
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function saveYtdl()
     {
         $params = $this->request->getParams();
@@ -142,8 +143,8 @@ class SettingsController extends Controller
         return new JSONResponse($resp);
     }
     /**
-     * @NoAdminRequired
      */
+    #[NoAdminRequired]
     public function deleteYtdl()
     {
         $saved = json_decode($this->settings->get("custom_ytdl_settings"), 1);

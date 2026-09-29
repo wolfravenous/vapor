@@ -5,6 +5,9 @@ namespace OCA\Vapor\Controller;
 use \OCP\AppFramework\ApiController as API;
 use \OCP\IRequest;
 use \OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Attribute\CORS;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use \OCP\IL10N;
 use OCA\Vapor\Controller\MainController as Main;
 use OCA\Vapor\Controller\YtdlController as YTD;
@@ -28,10 +31,10 @@ class ApiController extends API
     }
 
     /**
-     * @CORS
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[CORS]
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function download(string $url, string $type = "aria2", array $options = []): JSONResponse
     {
         if ($type == "aria2") {
@@ -46,10 +49,10 @@ class ApiController extends API
     }
 
     /**
-     * @CORS
-     * @NoAdminRequired
-     * @NoCSRFRequired
      */
+    #[CORS]
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function search(string $keyword, string $site = "TPB"): JSONResponse
     {
         return $this->search->execute($keyword, $site);
