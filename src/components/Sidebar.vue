@@ -1,5 +1,5 @@
 <template>
-  <nav id="app-navigation" class="sidebar">
+  <nav class="sidebar">
     <div class="sidebar-menu">
       <div class="menu-header">
         <h2>{{ t('vapor', 'Downloads') }}</h2>
@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { translate as t } from '@nextcloud/l10n'
 import { useDownloads } from '../stores/downloads'
@@ -89,11 +89,11 @@ onUnmounted(() => {
     clearInterval(countersInterval)
   }
 })
-
 </script>
 
 <style scoped lang="scss">
 .sidebar {
+  position: relative;
   width: 250px;
   background-color: var(--color-background-secondary);
   border-right: 1px solid var(--color-border);
