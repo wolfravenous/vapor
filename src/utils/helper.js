@@ -1,6 +1,7 @@
 import {
     generateUrl
 } from '@nextcloud/router'
+import { getFilePickerBuilder } from '@nextcloud/dialogs'
 import Toastify from 'toastify-js'
 import "toastify-js/src/toastify.css"
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
@@ -286,17 +287,26 @@ const helper = {
         container.setAttribute("type", name);
         container.className = "table " + name;
     },
+    
+
     filepicker(cb, currentPath) {
-        OC.dialogs.filepicker(
-            t('vapor', 'Select a directory'),
-            cb,
-            false,
-            'httpd/unix-directory',
-            true,
-            OC.dialogs.FILEPICKER_TYPE_CHOOSE,
-            currentPath
-        );
+        getFilePickerBuilder(t('vapor', 'Select a directory'))
+            .setMimeTypeFilter(['httpd/unix-directory'])
+            .setType(1) // 1 = FilePickerType.Choose (directory chooser)
+            .allowDirectories()
+            .startAt(currentPath || '')
+            .build()
+            .pick()
+            .then((path) => {
+                if (path) {
+                    cb(path);
+                }
+            })
+            .catch(() => {
+                // User cancelled the picker — nothing to do.
+            });
     },
+
     getSettings(key, defaultValue = null, type = 2) {
         let url = helper.generateUrl("/apps/vapor/getsettings");
         return new Promise(resolve => {
