@@ -42,15 +42,46 @@ class SettingsController extends Controller
 
     /**
      */
-    #[NoAdminRequired]
-    public function saveCustom()
-    {
-        $params = $this->request->getParams();
-        foreach ($params as $key => $value) {
-            $resp = $this->save($key, $value);
-        }
-        return new JSONResponse($resp);
+
+
+
+
+#[NoAdminRequired]
+public function saveCustom(): JSONResponse
+{
+    $params = $this->request->getParams();
+
+    if (empty($params)) {
+        return new JSONResponse([
+            'message' => 'No parameters received',
+            'status'  => false,
+        ]);
     }
+
+    $resp = ['message' => 'Nothing to save', 'status' => false];
+    foreach ($params as $key => $value) {
+        // Skip Nextcloud-internal routing keys (e.g. _route).
+        if (substr($key, 0, 1) === '_') {
+            continue;
+        }
+
+        try {
+            $resp = $this->save($key, $value);
+        } catch (\Throwable $e) {
+            return new JSONResponse([
+                'message' => 'Save failed: ' . $e->getMessage(),
+                'status'  => false,
+            ]);
+        }
+
+        if (is_array($resp) && isset($resp['status']) && $resp['status'] === false) {
+            break;
+        }
+    }
+
+    return new JSONResponse($resp);
+}
+
 
     /**
      */

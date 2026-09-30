@@ -8,6 +8,16 @@ type requestOptions = {
     [key: string]: any;
     headers: Headers;
 }
+
+declare global {
+    interface Window {
+        OC?: {
+            requestToken?: string
+        }
+    }
+}
+
+
 export const Http = class {
     data: httpData;
     url: string;
@@ -74,7 +84,7 @@ export const Http = class {
             this.client.send(params);
         } else {
             let options = this.getRequestOpts();
-            fetch(options).then(response => {
+            fetch(this.url, options).then(response => {
                 if (response.status !== 200) {
                     console.log('Network failures. Status Code: ' + response.status);
                     return;
@@ -104,31 +114,41 @@ export const Http = class {
     appendHeader(key: string, val: string) {
         this.headers.append(key, val);
     }
-    getRequestOpts() {
-        this.setHeader('content-type', this.contentType);
-        let token;
-        if (token = this.getToken()) {
-            this.setHeader('requesttoken', token)
-            this.setHeader('OCS-APIREQUEST', 'true')
-        }
-        if (this.method == 'POST' && this.data) {
-            var body = JSON.stringify(this.data);
-        }
-        let options: requestOptions = {
-            headers: this.headers,
-            method: this.method,
-            body: body,
-            mode: 'cors',
-            cache: 'default'
-        }
-        return new Request(this.url, options);
+
+
+
+  getRequestOpts() {
+    this.setHeader('content-type', this.contentType);
+    let token;
+    if (token = this.getToken()) {
+        this.setHeader('requesttoken', token)
+        this.setHeader('OCS-APIREQUEST', 'true')
     }
-    getToken() {
-        if (typeof document == "undefined") {
-            return null
-        }
-        return window.document.getElementsByTagName('head')[0].getAttribute('data-requesttoken')
+    let body;
+    if (this.method == 'POST' && this.data) {
+        body = JSON.stringify(this.data);
     }
+    return {
+        headers: this.headers,
+        method: this.method,
+        body: body
+    };
+} 
+
+
+
+getToken() {
+    if (typeof document == "undefined") {
+        return null
+    }
+    // Prefer the live OC.requestToken — it's updated on rotation.
+    // Fall back to the <head> attribute for very old NC versions.
+    if (window.OC && window.OC.requestToken) {
+        return window.OC.requestToken
+    }
+    return window.document.getElementsByTagName('head')[0].getAttribute('data-requesttoken')
+  }
+
     setUrl(url: string) {
         this.url = url
         return this
