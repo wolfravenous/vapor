@@ -1,31 +1,15 @@
 <template>
   <section id="vapor-settings-collapsible-container">
     <div class="vapor-settings-item" :data-tippy-content="errorTooltip">
-      <toggleButton
-        :disabledText="errorText"
-        :enabledText="errorText"
-        :defaultStatus="toggleStatus"
-        @changed="toggle"
+      <NcCheckboxRadioSwitch
+        v-model="toggleStatus"
+        type="switch"
         name="ncd_hide_errors"
-      ></toggleButton>
+        @update:model-value="(value) => toggle('ncd_hide_errors', value)"
+      >
+        {{ errorText }}
+      </NcCheckboxRadioSwitch>
     </div>
-
-
- <!-- TODO: temporarily hidden - duplicate of the checkbox in Aria2Control.
-         Re-enable once one of the two is chosen as the canonical control.
-
-    <div class="vapor-settings-item" :data-tippy-content="btTooltip">
-      <toggleButton
-        v-if="isAdmin"
-        disabledText="Disable BT for non-admin users"
-        enabledText="Disable BT for non-admin users"
-        :defaultStatus="btStatus"
-        name="ncd_disable_bt"
-        @changed="toggle"
-      ></toggleButton>
-    </div>
-	-->
-
 
     <div class="vapor-settings-item">
       <a :href="personal.url" title="">
@@ -41,10 +25,9 @@
 </template>
 
 <script>
-import toggleButton from "./components/toggleButton";
 import helper from "./utils/helper";
-import { translate as t, translatePlural as n } from "@nextcloud/l10n";
-import Http from "./lib/http";
+import { translate as t } from "@nextcloud/l10n";
+import { NcCheckboxRadioSwitch } from "@nextcloud/vue";
 const basePath = "/apps/vapor";
 
 export default {
@@ -66,17 +49,14 @@ export default {
       sectionName: t("vapor", "Settings"),
       errorText: t("vapor", "Hide Errors"),
       toggleStatus: helper.str2Boolean(this.settings.settings.ncd_hide_errors),
-      btStatus: helper.str2Boolean(this.settings.settings.ncd_disable_bt),
       errorTooltip: t("vapor", "Enable this to hide errors"),
-      btTooltip: t("ncdownload", "Disable BT for non-admin users"),
     };
   },
-  created() {},
   methods: {
     toggle(name, value) {
       let data = {};
       data[name] = value ? 1 : 0;
-      let path = (name == "ncd_disable_bt") ? "/admin/save" : "/personal/save";
+      let path = "/personal/save";
       const url = helper.generateUrl(basePath + path);
       helper.httpClient(url)
         .setData(data)
@@ -89,9 +69,8 @@ export default {
     },
   },
   components: {
-    toggleButton,
+    NcCheckboxRadioSwitch,
   },
-  mounted() {},
 };
 </script>
 

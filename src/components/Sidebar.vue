@@ -45,36 +45,23 @@
     </template>
 
     <template #footer>
-      <div class="sidebar-settings">
-        <button class="settings-toggle" @click="toggleSettings">
-          <span class="settings-icon">⚙</span>
-          <span class="settings-label">{{ t('vapor', 'Settings') }}</span>
-          <span class="toggle-icon" :class="{ open: settingsOpen }">▼</span>
-        </button>
-
-        <div v-if="settingsOpen" class="settings-content">
-          <Aria2Control />
-          <settingsBar />
-        </div>
-      </div>
+      <NcAppNavigationSettings :name="t('vapor', 'Settings')">
+        <Aria2Control />
+        <settingsBar />
+      </NcAppNavigationSettings>
     </template>
   </NcAppNavigation>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppNavigation, NcAppNavigationItem, NcCounterBubble, NcAppNavigationIconBullet } from '@nextcloud/vue'
+import { NcAppNavigation, NcAppNavigationItem, NcCounterBubble, NcAppNavigationIconBullet, NcAppNavigationSettings } from '@nextcloud/vue'
 import { useDownloads } from '../stores/downloads'
 import Aria2Control from './Aria2Control.vue'
 import settingsBar from '../settingsBar.vue'
 
 const { counters, fetchCounters } = useDownloads()
-const settingsOpen = ref(false)
-
-const toggleSettings = () => {
-  settingsOpen.value = !settingsOpen.value
-}
 
 let countersInterval = null
 
