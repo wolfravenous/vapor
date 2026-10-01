@@ -1,51 +1,45 @@
 <template>
   <NcAppNavigation>
     <template #list>
-      <div class="sidebar-menu">
-        <div class="menu-header">
-          <h2>{{ t('vapor', 'Downloads') }}</h2>
-        </div>
+      <NcAppNavigationItem
+        :name="t('vapor', 'Active Downloads')"
+        icon="icon-download"
+        to="/active"
+      >
+        <template #counter>
+          <NcCounterBubble v-if="counters.active" :count="counters.active" />
+        </template>
+      </NcAppNavigationItem>
 
-        <router-link
-          to="/active"
-          class="menu-item"
-          :class="{ active: $route.path === '/active' }"
-        >
-          <span class="menu-icon">▶</span>
-          <span class="menu-label">{{ t('vapor', 'Active Downloads') }}</span>
-          <span v-if="counters.active" class="menu-badge">{{ counters.active }}</span>
-        </router-link>
+      <NcAppNavigationItem
+        :name="t('vapor', 'Waiting Downloads')"
+        icon="icon-time"
+        to="/waiting"
+      >
+        <template #counter>
+          <NcCounterBubble v-if="counters.waiting" :count="counters.waiting" />
+        </template>
+      </NcAppNavigationItem>
 
-        <router-link
-          to="/waiting"
-          class="menu-item"
-          :class="{ active: $route.path === '/waiting' }"
-        >
-          <span class="menu-icon">⏸</span>
-          <span class="menu-label">{{ t('vapor', 'Waiting Downloads') }}</span>
-          <span v-if="counters.waiting" class="menu-badge">{{ counters.waiting }}</span>
-        </router-link>
+      <NcAppNavigationItem
+        :name="t('vapor', 'Failed Downloads')"
+        icon="icon-error"
+        to="/failed"
+      >
+        <template #counter>
+          <NcCounterBubble v-if="counters.failed" :count="counters.failed" />
+        </template>
+      </NcAppNavigationItem>
 
-        <router-link
-          to="/failed"
-          class="menu-item"
-          :class="{ active: $route.path === '/failed' }"
-        >
-          <span class="menu-icon">✕</span>
-          <span class="menu-label">{{ t('vapor', 'Failed Downloads') }}</span>
-          <span v-if="counters.failed" class="menu-badge">{{ counters.failed }}</span>
-        </router-link>
-
-        <router-link
-          to="/complete"
-          class="menu-item"
-          :class="{ active: $route.path === '/complete' }"
-        >
-          <span class="menu-icon">✓</span>
-          <span class="menu-label">{{ t('vapor', 'Complete Downloads') }}</span>
-          <span v-if="counters.complete" class="menu-badge">{{ counters.complete }}</span>
-        </router-link>
-      </div>
+      <NcAppNavigationItem
+        :name="t('vapor', 'Complete Downloads')"
+        icon="icon-checkmark"
+        to="/complete"
+      >
+        <template #counter>
+          <NcCounterBubble v-if="counters.complete" :count="counters.complete" />
+        </template>
+      </NcAppNavigationItem>
     </template>
 
     <template #footer>
@@ -67,15 +61,13 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppNavigation } from '@nextcloud/vue'
+import { NcAppNavigation, NcAppNavigationItem, NcCounterBubble } from '@nextcloud/vue'
 import { useDownloads } from '../stores/downloads'
 import Aria2Control from './Aria2Control.vue'
 import settingsBar from '../settingsBar.vue'
 
-const route = useRoute()
-const { downloads, counters, fetchCounters } = useDownloads()
+const { counters, fetchCounters } = useDownloads()
 const settingsOpen = ref(false)
 
 const toggleSettings = () => {
