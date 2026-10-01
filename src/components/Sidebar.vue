@@ -13,9 +13,11 @@
 
       <NcAppNavigationItem
         :name="t('vapor', 'Waiting Downloads')"
-        icon="icon-time"
         to="/waiting"
       >
+        <template #icon>
+          <NcAppNavigationIconBullet color="0082c9" />
+        </template>
         <template #counter>
           <NcCounterBubble v-if="counters.waiting" :count="counters.waiting" />
         </template>
@@ -62,7 +64,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppNavigation, NcAppNavigationItem, NcCounterBubble } from '@nextcloud/vue'
+import { NcAppNavigation, NcAppNavigationItem, NcCounterBubble, NcAppNavigationIconBullet } from '@nextcloud/vue'
 import { useDownloads } from '../stores/downloads'
 import Aria2Control from './Aria2Control.vue'
 import settingsBar from '../settingsBar.vue'
