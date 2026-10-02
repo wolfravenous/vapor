@@ -8,9 +8,9 @@
     @mounted="renderAria2" path="/apps/vapor/personal/aria2/save" :validOptions="aria2Options">
     <template #save>Save Aria2 Settings</template>
   </customOptions>
-  <customOptions name="custom-ytdl-settings" title="Personal YouTube-dl Settings" @mounted="renderYtdl"
+  <customOptions name="custom-ytdl-settings" title="Personal Yt-dlp Settings" @mounted="renderYtdl"
     path="/apps/vapor/personal/ytdl/save" :validOptions="ytdlOptions">
-    <template #save>Save Youtube-dl Settings</template>
+    <template #save>Save Yt-dlp Settings</template>
   </customOptions>
 </template>
 <script>

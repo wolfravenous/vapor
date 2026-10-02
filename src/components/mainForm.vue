@@ -11,7 +11,7 @@
         class="ytdl-link option-buttons"
         @click.prevent="whichType('ytdl', $event)"
       >
-        Youtube-dl
+        Yt-dlp
       </div>
       <div
         class="search-torrents option-buttons"
