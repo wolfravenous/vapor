@@ -125,14 +125,46 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
 
 
 
-        // Pre-flight: fetch the video id and title from yt-dlp so we can insert
-        // the row with the real filename before the download starts.
+
         $meta = $yt->getIdAndTitle($url);
         if (!$meta['id']) {
             return new JSONResponse(['error' => 'Could not determine video id from URL']);
         }
+
+        // Preflight duplicate check: yt-dlp's output template is
+        // "%(title).32s.%(ext)s", so the on-disk basename starts with the
+        // first 32 characters of the title. If a file with that prefix
+        // already exists in the user's download directory, treat this as
+        // a duplicate and refuse to spawn another download. This is the
+        // async equivalent of yt-dlp's own "has already been downloaded"
+        // check, which we can no longer observe because the spawn now
+        // happens detached from the request.
+        $realDir = Helper::getRealDownloadDir();
+        if ($realDir !== '' && is_dir($realDir) && !empty($meta['title'])) {
+            $prefix = mb_substr($meta['title'], 0, 32);
+            // glob() treats * ? [ ] as metacharacters; escape them.
+            $safePrefix = preg_replace('/([*?\[\]])/', '\\\\$1', $prefix);
+            $matches = glob($realDir . '/' . $safePrefix . '*');
+            if (is_array($matches) && count($matches) > 0) {
+                \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                    'VAPOR YTDL: duplicate preflight hit for prefix=' . $prefix
+                    . ' existing=' . basename($matches[0])
+                );
+                return new JSONResponse([
+                    'duplicate' => true,
+                    'message' => sprintf(
+                        'You already downloaded "%s". To get it again, use the Redownload button next to it in your download history.',
+                        basename($matches[0])
+                    ),
+                ]);
+            }
+        }
+
         $gid = Helper::generateGID($meta['id']);
         $filename = $meta['title'] ?: 'unknown';
+
+
+
 
 
         // Insert row with status=ACTIVE before the download runs.
