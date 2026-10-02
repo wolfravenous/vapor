@@ -2,7 +2,6 @@
 
 namespace OCA\Vapor\Db;
 
-
 //BEGIN STEVE CODE
 //use OC\AllConfig;
 use OCP\IConfig;
@@ -58,7 +57,17 @@ class Settings
         if ($this->type == self::TYPE['USER'] && isset($this->user)) {
             return $this->allConfig->getUserValue($this->user, $this->appName, $key, $default);
         } else if ($this->type == self::TYPE['SYSTEM']) {
-            return $this->allConfig->getSystemValue($key, $default);
+            $value = $this->allConfig->getSystemValue($key, $default);
+            // SYSTEM-type values are serialized as JSON strings on write,
+            // so decode them back to arrays on read. Non-JSON strings and
+            // already-decoded values pass through unchanged.
+            if (is_string($value) && $value !== '' && (str_starts_with($value, '{') || str_starts_with($value, '['))) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $decoded;
+                }
+            }
+            return $value;
         } else {
             return $this->allConfig->getAppValue($this->appName, $key, $default);
         }
