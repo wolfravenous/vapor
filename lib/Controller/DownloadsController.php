@@ -499,7 +499,7 @@ try {
         if ($realDir !== false && strpos($realDir, $realBase . DIRECTORY_SEPARATOR) === 0) {
             $relativeFolder = ltrim(substr($realDir, strlen($realBase)), DIRECTORY_SEPARATOR);
             if ($relativeFolder !== '') {
-                $userFolder->getStorage()->getScanner()->scan($relativeFolder, true);
+                $userFolder->getStorage()->getScanner()->scan($relativeFolder, \OC\Files\Cache\Scanner::SCAN_RECURSIVE);
                 $logger->warning('VAPOR DELETE: rescanned folder=' . $relativeFolder);
             }
         } else {
