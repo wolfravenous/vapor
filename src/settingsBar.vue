@@ -4,7 +4,6 @@
       <NcCheckboxRadioSwitch
         v-model="toggleStatus"
         type="switch"
-        name="ncd_hide_errors"
         @update:model-value="(value) => toggle('ncd_hide_errors', value)"
       >
         {{ errorText }}

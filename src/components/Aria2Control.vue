@@ -80,7 +80,7 @@ const loadBtSetting = () => {
     .setData({ name: 'ncd_admin_settings', type: 1, default: [] })
     .setHandler((data) => {
       if (data && typeof data === 'object' && 'ncd_disable_bt' in data) {
-        disableBtNonAdmin.value = !!data.ncd_disable_bt
+        disableBtNonAdmin.value = helper.str2Boolean(data.ncd_disable_bt)
       }
     })
     .setErrorHandler((err) => {
