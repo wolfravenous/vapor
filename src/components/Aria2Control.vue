@@ -60,77 +60,80 @@ onMounted(() => {
   loadAria2Status()
 })
 
-const loadAria2Status = async () => {
-  try {
-    const response = await fetch(helper.generateUrl('/apps/vapor/api/v2/aria2/status'))
-    const data = await response.json()
-    aria2Status.value = data.running ? 'running' : 'stopped'
-    error.value = null
-  } catch (err) {
-    console.error('Failed to load aria2 status:', err)
-    aria2Status.value = 'unknown'
-    error.value = t('vapor', 'Failed to load aria2 status')
-  }
-}
-
-const loadBtSetting = async () => {
-  try {
-    const response = await fetch(helper.generateUrl('/apps/vapor/getsettings'), {
-      method: 'POST'
+const loadAria2Status = () => {
+  helper.httpClient(helper.generateUrl('/apps/vapor/api/v2/aria2/status'))
+    .setMethod('GET')
+    .setHandler((data) => {
+      aria2Status.value = data && data.running ? 'running' : 'stopped'
+      error.value = null
     })
-    const data = await response.json()
-    if (data && data.settings) {
-      disableBtNonAdmin.value = data.settings.ncd_disable_bt ? true : false
-    }
-  } catch (err) {
-    console.error('Failed to load BT setting:', err)
-    btError.value = t('vapor', 'Failed to load BitTorrent setting')
-  }
+    .setErrorHandler((err) => {
+      console.error('Failed to load aria2 status:', err)
+      aria2Status.value = 'unknown'
+      error.value = t('vapor', 'Failed to load aria2 status')
+    })
+    .send()
 }
 
-const toggleAria2 = async () => {
+const loadBtSetting = () => {
+  helper.httpClient(helper.generateUrl('/apps/vapor/getsettings'))
+    .setData({ name: 'ncd_admin_settings', type: 1, default: [] })
+    .setHandler((data) => {
+      if (data && typeof data === 'object' && 'ncd_disable_bt' in data) {
+        disableBtNonAdmin.value = !!data.ncd_disable_bt
+      }
+    })
+    .setErrorHandler((err) => {
+      console.error('Failed to load BT setting:', err)
+    })
+    .send()
+}
+
+const toggleAria2 = () => {
   loading.value = true
   error.value = null
-  try {
-    const action = aria2Status.value === 'running' ? 'stop' : 'start'
-    const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/aria2/${action}`), {
-      method: 'POST'
+  const action = aria2Status.value === 'running' ? 'stop' : 'start'
+  helper.httpClient(helper.generateUrl(`/apps/vapor/api/v2/aria2/${action}`))
+    .setData({})
+    .setHandler((data) => {
+      if (data && data.error) {
+        error.value = data.error
+        helper.error(t('vapor', `Failed to ${action} aria2`))
+      } else {
+        loadAria2Status()
+        helper.message(t('vapor', `Aria2 ${action === 'start' ? 'started' : 'stopped'}`))
+      }
+      loading.value = false
     })
-    if (!response.ok) {
-      throw new Error(`Failed to ${action} aria2`)
-    }
-    await loadAria2Status()
-    helper.message(t('vapor', `Aria2 ${action === 'start' ? 'started' : 'stopped'}`))
-  } catch (err) {
-    console.error(`Failed to toggle aria2:`, err)
-    error.value = err.message
-    helper.error(t('vapor', `Failed to ${aria2Status.value === 'running' ? 'stop' : 'start'} aria2`))
-  } finally {
-    loading.value = false
-  }
+    .setErrorHandler((err) => {
+      console.error('Failed to toggle aria2:', err)
+      error.value = String(err)
+      helper.error(t('vapor', `Failed to ${action} aria2`))
+      loading.value = false
+    })
+    .send()
 }
 
-const toggleDisableBt = async () => {
+const toggleDisableBt = () => {
   btError.value = null
-  try {
-    const response = await fetch(helper.generateUrl('/apps/vapor/admin/save'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: `ncd_disable_bt=${disableBtNonAdmin.value ? '1' : '0'}`
+  helper.httpClient(helper.generateUrl('/apps/vapor/admin/save'))
+    .setData({ ncd_disable_bt: disableBtNonAdmin.value ? 1 : 0 })
+    .setHandler((data) => {
+      if (data && data.status === false) {
+        btError.value = data.error || t('vapor', 'Failed to save BitTorrent setting')
+        helper.error(t('vapor', 'Failed to save BitTorrent setting'))
+        disableBtNonAdmin.value = !disableBtNonAdmin.value
+      } else {
+        helper.message(t('vapor', 'BitTorrent setting saved'))
+      }
     })
-    if (!response.ok) {
-      throw new Error('Failed to save BitTorrent setting')
-    }
-    await response.json()
-    helper.message(t('vapor', 'BitTorrent setting saved'))
-  } catch (err) {
-    console.error('Failed to toggle BT setting:', err)
-    btError.value = err.message
-    helper.error(t('vapor', 'Failed to save BitTorrent setting'))
-    disableBtNonAdmin.value = !disableBtNonAdmin.value
-  }
+    .setErrorHandler((err) => {
+      console.error('Failed to toggle BT setting:', err)
+      btError.value = String(err)
+      helper.error(t('vapor', 'Failed to save BitTorrent setting'))
+      disableBtNonAdmin.value = !disableBtNonAdmin.value
+    })
+    .send()
 }
 </script>
 
