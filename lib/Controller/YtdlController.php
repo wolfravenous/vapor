@@ -147,7 +147,7 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
         ]);
 
         \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-            'VAPOR YTDL: pre-inserted row gid=' . $gid . ' id=' . $id . ' filename=' . $filename
+            'VAPOR YTDL: pre-inserted row gid=' . $gid . ' id=' . $meta['id'] . ' filename=' . $filename
         );
 
         // Build the response BEFORE starting the download.
@@ -170,6 +170,21 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
             'VAPOR YTDL: download finished for gid=' . $gid
             . ' result=' . json_encode($resp)
         );
+
+// yt-dlp failed (non-zero exit): flip the row out of ACTIVE to ERROR so
+// the download leaves the Active tab and surfaces under Failed Downloads.
+// The pre-inserted row is otherwise left stuck at status=ACTIVE forever.
+if (isset($resp['error'])) {
+    $this->dbconn->updateStatus($gid, Helper::STATUS['ERROR']);
+
+    // Return a response shape the frontend already understands as an error
+    // (App.vue successCallback fires helper.error() when data.error exists).
+    return new JSONResponse([
+        'status'  => 'error',
+        'gid'     => $gid,
+        'error'   => trim($resp['error']),
+    ], \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR);
+}
 
         return $response;
     }
