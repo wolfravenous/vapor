@@ -158,33 +158,26 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
         ]);
 
 
-        // Now actually run the download. Helper::run() inside will:
-        //   - set the same gid (md5 of the same id) — no-op insert
-        //   - update progress on each line
-        //   - flip status to COMPLETE on success
+        // Spawn yt-dlp detached. The download runs in the background; the
+        // watcher (added in a later commit) will update this row to
+        // COMPLETE or ERROR once the child process exits.
         $yt->dbDlPath = Helper::getDownloadDir();
-        $resp = $yt->forceIPV4()->download($url);
-        folderScan::sync(true);
+        $resp = $yt->forceIPV4()->download($url, $gid);
 
         \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-            'VAPOR YTDL: download finished for gid=' . $gid
+            'VAPOR YTDL: spawn returned for gid=' . $gid
             . ' result=' . json_encode($resp)
         );
 
-// yt-dlp failed (non-zero exit): flip the row out of ACTIVE to ERROR so
-// the download leaves the Active tab and surfaces under Failed Downloads.
-// The pre-inserted row is otherwise left stuck at status=ACTIVE forever.
-if (isset($resp['error'])) {
-    $this->dbconn->updateStatus($gid, Helper::STATUS['ERROR']);
-
-    // Return a response shape the frontend already understands as an error
-    // (App.vue successCallback fires helper.error() when data.error exists).
-    return new JSONResponse([
-        'status'  => 'error',
-        'gid'     => $gid,
-        'error'   => trim($resp['error']),
-    ], \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR);
-}
+        if (empty($resp['spawned'])) {
+            // Spawn failed outright — mark the row ERROR now.
+            $this->dbconn->updateStatus($gid, Helper::STATUS['ERROR']);
+            return new JSONResponse([
+                'status'  => 'error',
+                'gid'     => $gid,
+                'error'   => 'Failed to spawn yt-dlp: ' . json_encode($resp),
+            ], \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
 
         return $response;
     }

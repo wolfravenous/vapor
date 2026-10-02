@@ -134,7 +134,9 @@ class Ytdl
         array_unshift($this->options, $option);
     }
 
-    public function download($url)
+
+
+    public function download($url, string $gid = '')
     {
         if ($this->audioOnly) {
             $this->audioMode();
@@ -150,82 +152,58 @@ class Ytdl
 
         $this->setOption("--output", $this->downloadDir . "/" . $this->outTpl);
         $this->setUrl($url);
-
-
         $this->addOption('--no-playlist');
-
         $this->prependOption($this->bin);
-        $process = new Process($this->options, null, $this->env);
-        $process->setTimeout($this->timeout);
-        $data = ['link' => $url, 'path' => $this->dbDlPath];
-        if ($this->audioOnly) {
-            $data['ext'] = $this->audioFormat;
-        } else {
-            $data['ext'] = $this->videoFormat;
+
+        // Async spawn: yt-dlp runs detached, writing stdout+stderr to a
+        // per-gid log file. The request returns immediately; a watcher
+        // (added in a later commit) reads the log to determine outcome.
+        $logDir = \OC::$server->get(\OCP\IConfig::class)->getSystemValue('datadirectory', '/var/www/nextcloud/data')
+            . '/vapor-ytdl-logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0770, true);
         }
-        $process->run(function ($type, $buffer) use ($data, $process) {
-            if (Process::ERR === $type) {
-                $this->onError($buffer);
-            } else {
-                $data['pid'] = $process->getPid();
-                $this->onOutput($buffer, $data);
-            }
-        });
-        
- \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-            'VAPOR YTDL: process done, successful=' . var_export($process->isSuccessful(), true)
-            . ' exitcode=' . $process->getExitCode()
-            . ' gid=' . var_export($this->helper->getGid(), true)
+        $logFile = $logDir . '/' . ($gid !== '' ? $gid : uniqid('ytdl-', true)) . '.log';
+
+        // Symfony's Process doesn't redirect to files natively, so wrap
+        // the invocation in `/bin/sh -c "... > log 2>&1"`.
+        $shellCmd = escapeshellarg($this->bin);
+        foreach (array_slice($this->options, 1) as $opt) {
+            $shellCmd .= ' ' . escapeshellarg($opt);
+        }
+        $shellCmd .= ' > ' . escapeshellarg($logFile) . ' 2>&1';
+
+        $process = new Process(['/bin/sh', '-c', $shellCmd], null, $this->env);
+        $process->setTimeout($this->timeout);
+        $process->setOptions(['create_new_console' => true]);
+        $process->disableOutput();
+        $process->start();
+
+        $pid = $process->getPid();
+
+        // Persist PID and log path in the DB row's data column so the
+        // watcher can find them.
+        if ($gid !== '') {
+            (new \OCA\Vapor\Db\Helper())->mergeData($gid, [
+                'pid' => $pid,
+                'log' => $logFile,
+            ]);
+        }
+
+        \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+            'VAPOR YTDL: spawned detached pid=' . $pid
+            . ' gid=' . $gid
+            . ' log=' . $logFile
         );
 
-
-        if ($process->isSuccessful()) {
-
-            \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-                'VAPOR YTDL: process successful, gid=' . var_export($this->helper->getGid(), true)
-                . ' file=' . var_export($this->helper->getFile(), true)
-            );
-
-            $this->helper->updateStatus(Helper::STATUS['COMPLETE']);
-        
-            // === Save in Nextcloud immediatly ===
-            if ($this->helper->file) {
-                try {
-                    $user = \OC::$server->get(IUserSession::class)->getUser();
-                    if ($user) {
-                        $userId = $user->getUID();
-                        $rootFolder = \OC::$server->get(IRootFolder::class);
-                        $userFolder = $rootFolder->getUserFolder($userId);
-                        // relative path files for user 
-                        // $this->dbDlPath is by example "/Downloads"
-                        $relativePath = ($this->dbDlPath ? ltrim($this->dbDlPath, '/') . '/' : '') . $this->helper->file;
-                        $storage = $userFolder->getStorage();
-                        $scanner = $storage->getScanner();
-                        // Scan only this file
-                        $scanner->scan('files/' . $relativePath, true);
-                    }
-                } catch (\Exception $e) {
-                    // In case of error (missing file, permissions), dont stop
-                    \OC::$server->get(\Psr\Log\LoggerInterface::class)->error(
-                        'Vapor: Failed to scan newly downloaded file: ' . $e->getMessage(),
-                        ['app' => 'vapor']
-                    );
-                }
-            }
-            // =========================================================
-        
-            // BEGIN STEVE EDITS
-            if ($this->helper->alreadyDownloaded) {
-                return [
-                    'duplicate' => true,
-                    'message' => sprintf('You already downloaded "%s". To get it again, use the Redownload button next to it in your download history.', $this->helper->file ?: 'this item'),
-                ];
-            }
-            // END STEVE EDITS		
-            return ['message' => $this->helper->file ?? $process->getErrorOutput()];
-        }
-        return ['error' => $process->getErrorOutput()];
+        return [
+            'spawned' => true,
+            'pid' => $pid,
+            'log' => $logFile,
+        ];
     }
+
+
 
     private function onError($buffer)
     {

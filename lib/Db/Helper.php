@@ -131,6 +131,46 @@ class Helper
         return $query->executeStatement();
     }
 
+
+
+    /**
+     * Merge arbitrary keys into the serialized `data` column for a gid,
+     * preserving any existing keys (link, ext, path). Used by the async
+     * ytdl flow to persist the child PID and its log file path so the
+     * watcher can find them later.
+     *
+     * @param string $gid
+     * @param array  $merge  keys to add/overwrite in the data column
+     * @return bool  true on success, false if no row exists for $gid
+     */
+    public function mergeData(string $gid, array $merge): bool
+    {
+        $row = $this->getByGid($gid);
+        if (!$row) {
+            return false;
+        }
+        $current = [];
+        if (!empty($row['data'])) {
+            $decoded = $this->getExtra($row['data']);
+            if (is_array($decoded)) {
+                $current = $decoded;
+            }
+        }
+        $merged = array_merge($current, $merge);
+
+        // Use a fresh query builder. (The class reuses $this->queryBuilder
+        // across calls, which risks state leakage between queries; a new
+        // builder avoids that here.)
+        $qb = $this->conn->getQueryBuilder();
+        $qb->update($this->table)
+            ->set('data', $qb->createNamedParameter(serialize($merged)))
+            ->where('gid = :gid')
+            ->setParameter('gid', $gid);
+        return (bool) $qb->executeStatement();
+    }
+
+
+
     public function getDBType(): string
     {
 	    // return \OC::$server->getConfig()->getSystemValue('dbtype', "mysql");
