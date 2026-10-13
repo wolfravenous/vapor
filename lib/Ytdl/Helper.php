@@ -21,7 +21,7 @@ class Helper
     public function __construct()
     {
         $this->dbconn = new DbHelper();
-        $this->tablename = $this->dbconn->queryBuilder->getTableName("vapor_info");
+        $this->tablename = $this->dbconn->getPrefixedTable();
 	// $this->user = \OC::$server->getUserSession()->getUser()->getUID();
 	// BEGIN STEVE EDITS
         $this->user = \OC::$server->get(\OCP\IUserSession::class)->getUser()->getUID();
