@@ -346,6 +346,7 @@ class Helper
         return filter_var($string, FILTER_SANITIZE_STRING);
     }
 
+
     public static function doSignal($pid, $signal): bool
     {
         if (\function_exists('posix_kill')) {
@@ -360,10 +361,48 @@ class Helper
         return true;
     }
 
-    public static function isRunning($pid)
+    /**
+     * True if the PID refers to a process that is still doing work.
+     *
+     * A zombie (process state "Z") is not doing work — it has exited and
+     * is only waiting for its parent to reap it. posix_kill(pid, 0)
+     * returns true for zombies, which would make us think a finished
+     * download is still in progress. Check /proc/<pid>/stat to exclude
+     * zombies.
+     */
+    public static function isRunning($pid): bool
     {
+        if (!$pid) {
+            return false;
+        }
+
+        // If /proc is available, use it — it distinguishes live from zombie.
+        $statFile = '/proc/' . (int) $pid . '/stat';
+        if (@is_readable($statFile)) {
+            $stat = @file_get_contents($statFile);
+            if ($stat === false) {
+                // Fall through to posix_kill path below.
+            } else {
+                // Format: "pid (comm) state ...". comm can contain spaces,
+                // so find the last ')' and read the state char after it.
+                $closeParen = strrpos($stat, ')');
+                if ($closeParen !== false) {
+                    $after = ltrim(substr($stat, $closeParen + 1));
+                    $state = $after !== '' ? $after[0] : '';
+                    // Z = zombie; X = dead. Both mean "not doing work".
+                    if ($state === 'Z' || $state === 'X') {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+        }
+
+        // Fallback for non-Linux or /proc unavailable: original behavior.
         return self::doSignal($pid, 0);
     }
+
+
 
     public static function stop($pid)
     {

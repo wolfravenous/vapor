@@ -25,7 +25,6 @@ class YtdlController extends Controller
     private $ytdl;
     private $aria2;
     private $urlGenerator;
-    private $tablename;
     private $dataDir;
 
     public function __construct($appName, IRequest $request, $userId, IL10N $IL10N, Aria2 $aria2, Ytdl $ytdl)
@@ -43,7 +42,6 @@ class YtdlController extends Controller
         $this->ytdl = $ytdl;
         $this->aria2 = $aria2;
         $this->aria2->init();
-        $this->tablename = $this->dbconn->queryBuilder->getTableName("vapor_info");
     }
     /**
      *
@@ -125,14 +123,46 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
 
 
 
-        // Pre-flight: fetch the video id and title from yt-dlp so we can insert
-        // the row with the real filename before the download starts.
+
         $meta = $yt->getIdAndTitle($url);
         if (!$meta['id']) {
             return new JSONResponse(['error' => 'Could not determine video id from URL']);
         }
+
+        // Preflight duplicate check: yt-dlp's output template is
+        // "%(title).32s.%(ext)s", so the on-disk basename starts with the
+        // first 32 characters of the title. If a file with that prefix
+        // already exists in the user's download directory, treat this as
+        // a duplicate and refuse to spawn another download. This is the
+        // async equivalent of yt-dlp's own "has already been downloaded"
+        // check, which we can no longer observe because the spawn now
+        // happens detached from the request.
+        $realDir = Helper::getRealDownloadDir();
+        if ($realDir !== '' && is_dir($realDir) && !empty($meta['title'])) {
+            $prefix = mb_substr($meta['title'], 0, 32);
+            // glob() treats * ? [ ] as metacharacters; escape them.
+            $safePrefix = preg_replace('/([*?\[\]])/', '\\\\$1', $prefix);
+            $matches = glob($realDir . '/' . $safePrefix . '*');
+            if (is_array($matches) && count($matches) > 0) {
+                \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                    'VAPOR YTDL: duplicate preflight hit for prefix=' . $prefix
+                    . ' existing=' . basename($matches[0])
+                );
+                return new JSONResponse([
+                    'duplicate' => true,
+                    'message' => sprintf(
+                        'You already downloaded "%s". To get it again, use the Redownload button next to it in your download history.',
+                        basename($matches[0])
+                    ),
+                ]);
+            }
+        }
+
         $gid = Helper::generateGID($meta['id']);
         $filename = $meta['title'] ?: 'unknown';
+
+
+
 
 
         // Insert row with status=ACTIVE before the download runs.
@@ -158,33 +188,26 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
         ]);
 
 
-        // Now actually run the download. Helper::run() inside will:
-        //   - set the same gid (md5 of the same id) — no-op insert
-        //   - update progress on each line
-        //   - flip status to COMPLETE on success
+        // Spawn yt-dlp detached. The download runs in the background; the
+        // watcher (added in a later commit) will update this row to
+        // COMPLETE or ERROR once the child process exits.
         $yt->dbDlPath = Helper::getDownloadDir();
-        $resp = $yt->forceIPV4()->download($url);
-        folderScan::sync(true);
+        $resp = $yt->forceIPV4()->download($url, $gid);
 
         \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
-            'VAPOR YTDL: download finished for gid=' . $gid
+            'VAPOR YTDL: spawn returned for gid=' . $gid
             . ' result=' . json_encode($resp)
         );
 
-// yt-dlp failed (non-zero exit): flip the row out of ACTIVE to ERROR so
-// the download leaves the Active tab and surfaces under Failed Downloads.
-// The pre-inserted row is otherwise left stuck at status=ACTIVE forever.
-if (isset($resp['error'])) {
-    $this->dbconn->updateStatus($gid, Helper::STATUS['ERROR']);
-
-    // Return a response shape the frontend already understands as an error
-    // (App.vue successCallback fires helper.error() when data.error exists).
-    return new JSONResponse([
-        'status'  => 'error',
-        'gid'     => $gid,
-        'error'   => trim($resp['error']),
-    ], \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR);
-}
+        if (empty($resp['spawned'])) {
+            // Spawn failed outright — mark the row ERROR now.
+            $this->dbconn->updateStatus($gid, Helper::STATUS['ERROR']);
+            return new JSONResponse([
+                'status'  => 'error',
+                'gid'     => $gid,
+                'error'   => 'Failed to spawn yt-dlp: ' . json_encode($resp),
+            ], \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
 
         return $response;
     }
