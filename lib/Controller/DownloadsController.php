@@ -49,10 +49,23 @@ class DownloadsController extends Controller
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
+
     public function getByStatus(string $status = 'active'): JSONResponse
     {
         try {
+            // Before returning the Active list, sweep any ytdl downloads
+            // whose detached yt-dlp process has finished. This is the only
+            // mechanism that transitions async ytdl rows from ACTIVE to
+            // COMPLETE/ERROR, since the spawn no longer blocks the HTTP
+            // request. Running it here means the row is resolved before the
+            // same request reads it back, so the response is consistent.
+            if ($status === 'active') {
+                $this->sweepYtdlDownloads();
+            }
+
             $downloads = [];
+
+
 
             // Get Aria2 downloads from daemon
             $aria2Downloads = $this->getAria2ByStatus($status);
@@ -664,4 +677,245 @@ try {
             );
         }
     }
-  }
+
+
+    // =====================================================================
+    // Async ytdl sweep
+    // =====================================================================
+
+    /**
+     * For every ACTIVE ytdl row belonging to the current user, check whether
+     * the detached yt-dlp process (whose PID is stored in the row's data
+     * column) is still running. If it has exited, read its log file and
+     * transition the row to COMPLETE or ERROR accordingly, then delete the
+     * log file.
+     *
+     * Called at the top of getByStatus('active'), which runs every ~3
+     * seconds while the Vapor app is open. This is the sole mechanism that
+     * un-sticks async ytdl rows.
+     */
+    private function sweepYtdlDownloads(): void
+    {
+        if (!$this->userId) {
+            return;
+        }
+
+        try {
+            $rows = $this->dbHelper->getYtdlByUid($this->userId) ?? [];
+        } catch (\Throwable $e) {
+            \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                'VAPOR SWEEP: failed to load rows: ' . $e->getMessage()
+            );
+            return;
+        }
+
+        foreach ($rows as $row) {
+            try {
+                $this->sweepOneYtdlRow($row);
+            } catch (\Throwable $e) {
+                // One bad row must not stop the sweep for the others.
+                \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                    'VAPOR SWEEP: row threw: ' . $e->getMessage()
+                    . ' gid=' . ($row['gid'] ?? '?')
+                );
+            }
+        }
+    }
+
+    /**
+     * Process a single ytdl row: skip if not ACTIVE, skip if the process is
+     * still alive, otherwise read the log and resolve the row.
+     */
+    private function sweepOneYtdlRow(array $row): void
+    {
+        $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+
+        $status = (int) ($row['status'] ?? 0);
+        if ($status !== Helper::STATUS['ACTIVE']) {
+            return;
+        }
+
+        $gid = $row['gid'] ?? '';
+        if ($gid === '') {
+            return;
+        }
+
+        // Decode the row's data column to get pid + log
+        $data = [];
+        if (!empty($row['data'])) {
+            $decoded = $this->dbHelper->getExtra($row['data']);
+            if (is_array($decoded)) {
+                $data = $decoded;
+            }
+        }
+
+        $pid = isset($data['pid']) ? (int) $data['pid'] : 0;
+        $log = $data['log'] ?? null;
+
+        // Pre-async row: no pid stored. Skip — cleanup of these is a
+        // separate concern (see commit note).
+        if ($pid <= 0 || $log === null) {
+            return;
+        }
+
+        // Still running: leave it alone.
+        if (Helper::isRunning($pid)) {
+            return;
+        }
+
+        // Process is gone. Read the log and resolve.
+        $logger->warning(
+            'VAPOR SWEEP: pid=' . $pid . ' dead, parsing log gid=' . $gid
+            . ' log=' . $log
+        );
+
+        $outcome = $this->readYtdlOutcome($log);
+
+        if ($outcome['state'] === 'complete' && !empty($outcome['file'])) {
+            $this->dbHelper->updateFilename($gid, $outcome['file']);
+            $this->dbHelper->updateStatus($gid, Helper::STATUS['COMPLETE']);
+
+            $path = $data['path'] ?? Helper::getDownloadDir();
+            $this->rescanYtdlFile($path, $outcome['file']);
+
+            $logger->warning(
+                'VAPOR SWEEP: gid=' . $gid . ' resolved COMPLETE file=' . $outcome['file']
+            );
+        } else {
+            $this->dbHelper->updateStatus($gid, Helper::STATUS['ERROR']);
+
+            $logger->warning(
+                'VAPOR SWEEP: gid=' . $gid . ' resolved ERROR: '
+                . ($outcome['error'] ?? 'unknown')
+            );
+        }
+
+        // Delete the log file now that we've read it.
+        if (is_file($log)) {
+            @unlink($log);
+        }
+    }
+
+    /**
+     * Read a yt-dlp log file and decide the outcome.
+     *
+     * Returns one of:
+     *   ['state' => 'complete', 'file' => <basename>, 'error' => null]
+     *   ['state' => 'error',    'file' => null,       'error' => <reason>]
+     *
+     * Rules:
+     *   - If any line starts with "ERROR:", treat as failure (even if a
+     *     Destination line is also present — partial downloads with
+     *     --ignore-errors should not be reported as success).
+     *   - Otherwise, the last "[download] Destination:" or
+     *     "[ExtractAudio] Destination:" line gives the file basename.
+     *   - If neither, treat as failure with a diagnostic message.
+     */
+    private function readYtdlOutcome(string $logFile): array
+    {
+        if (!is_file($logFile) || !is_readable($logFile)) {
+            return [
+                'state' => 'error',
+                'file' => null,
+                'error' => 'log file missing or unreadable: ' . $logFile,
+            ];
+        }
+
+        $content = @file_get_contents($logFile);
+        if ($content === false) {
+            return [
+                'state' => 'error',
+                'file' => null,
+                'error' => 'failed to read log file: ' . $logFile,
+            ];
+        }
+
+        // yt-dlp writes errors to stderr, which is redirected into the same
+        // log file. Its error lines all begin with "ERROR:".
+        $errorLines = [];
+        foreach (preg_split('/\R/', $content) as $line) {
+            if (strpos($line, 'ERROR:') === 0) {
+                $errorLines[] = trim($line);
+            }
+        }
+
+        if (!empty($errorLines)) {
+            return [
+                'state' => 'error',
+                'file' => null,
+                'error' => end($errorLines),
+            ];
+        }
+
+        // No error: find the last Destination line.
+        // Matches:
+        //   [download] Destination: /path/to/file.ext
+        //   [ExtractAudio] Destination: /path/to/file.ext
+        //   [ffmpeg] Destination: /path/to/file.ext  (defensive)
+        $lastDest = null;
+        if (preg_match_all(
+            '/\[(?:download|ExtractAudio|ffmpeg)\]\s+Destination:\s+(.+)$/m',
+            $content,
+            $m
+        )) {
+            $lastDest = end($m[1]);
+        }
+
+        if ($lastDest === null) {
+            return [
+                'state' => 'error',
+                'file' => null,
+                'error' => 'no ERROR and no Destination line in log',
+            ];
+        }
+
+        return [
+            'state' => 'complete',
+            'file' => basename(trim($lastDest)),
+            'error' => null,
+        ];
+    }
+
+    /**
+     * Tell Nextcloud's scanner to register a newly downloaded file so it
+     * appears in the Files app and its filecache entry is created.
+     *
+     * $dir  is the NC-relative directory (e.g. "/Music/Fresh Pulls")
+     * $file is the basename (e.g. "Sabrina Carpenter - Manchild.opus")
+     */
+    private function rescanYtdlFile(string $dir, string $file): void
+    {
+        if ($dir === '' || $file === '') {
+            return;
+        }
+        $relativeDir = ltrim($dir, '/');
+        $relativePath = $relativeDir . '/' . $file;
+        $scanTarget = 'files/' . $relativePath;
+
+        $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+
+        // The scanner can collide with a concurrent NC scan (Files app
+        // navigating the folder, dav sync, etc.) and fail with a transient
+        // lock error. Retry once after a short delay before treating it as
+        // a real failure.
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            try {
+                $rootFolder = \OC::$server->get(\OCP\Files\IRootFolder::class);
+                $userFolder = $rootFolder->getUserFolder($this->userId);
+                $userFolder->getStorage()->getScanner()->scan($scanTarget, true);
+                return;
+            } catch (\Throwable $e) {
+                if ($attempt === 2) {
+                    $logger->warning(
+                        'VAPOR SWEEP: rescan failed (2 attempts) for '
+                        . $relativePath . ': ' . $e->getMessage()
+                    );
+                } else {
+                    usleep(500000); // 500ms
+                }
+            }
+        }
+    }
+
+
+}

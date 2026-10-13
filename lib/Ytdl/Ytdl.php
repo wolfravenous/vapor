@@ -181,14 +181,21 @@ class Ytdl
 
         $pid = $process->getPid();
 
-        // Persist PID and log path in the DB row's data column so the
-        // watcher can find them.
+
+
+        // Persist PID, log path, and download dir in the DB row's data
+        // column so the sweep can find them. Storing the path here means
+        // the sweep scans the directory the user had configured at spawn
+        // time, even if they later change the setting mid-download.
         if ($gid !== '') {
             (new \OCA\Vapor\Db\Helper())->mergeData($gid, [
                 'pid' => $pid,
                 'log' => $logFile,
+                'path' => Helper::getDownloadDir(),
             ]);
         }
+
+
 
         \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
             'VAPOR YTDL: spawned detached pid=' . $pid
