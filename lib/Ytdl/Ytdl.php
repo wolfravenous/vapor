@@ -165,15 +165,22 @@ class Ytdl
         }
         $logFile = $logDir . '/' . ($gid !== '' ? $gid : uniqid('ytdl-', true)) . '.log';
 
+
+
         // Symfony's Process doesn't redirect to files natively, so wrap
-        // the invocation in `/bin/sh -c "... > log 2>&1"`.
+        // the invocation in `/bin/sh -c "exec cmd > log 2>&1"`. The `exec`
+        // is load-bearing: it makes /bin/sh replace itself with yt-dlp, so
+        // the PID we store below is yt-dlp's own PID. Without it, the PID
+        // would be the shell's, and killing the shell would orphan yt-dlp.
         $shellCmd = escapeshellarg($this->bin);
         foreach (array_slice($this->options, 1) as $opt) {
             $shellCmd .= ' ' . escapeshellarg($opt);
         }
         $shellCmd .= ' > ' . escapeshellarg($logFile) . ' 2>&1';
 
-        $process = new Process(['/bin/sh', '-c', $shellCmd], null, $this->env);
+        $process = new Process(['/bin/sh', '-c', 'exec ' . $shellCmd], null, $this->env);
+
+
         $process->setTimeout($this->timeout);
         $process->setOptions(['create_new_console' => true]);
         $process->disableOutput();

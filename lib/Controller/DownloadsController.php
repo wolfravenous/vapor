@@ -355,16 +355,47 @@ class DownloadsController extends Controller
             }
             $type = $row ? (int) ($row['type'] ?? 0) : 0;
 
-            // ytdl downloads are not managed by aria2; cancel them by
-            // clearing the DB row. (Killing the actual yt-dlp process is
-            // a follow-up; see comment in the code.)
+
+            // ytdl downloads are spawned detached, so cancelling means:
+            //   1. kill the running yt-dlp process (SIGKILL via stored PID)
+            //   2. flip the row to ERROR so it leaves Active and appears in
+            //      Failed, where the user can Delete or (later) Retry.
+            // We deliberately do NOT delete the row, the log, or any partial
+            // file on disk — the partial is what makes a future Retry a
+            // resume, and the log is the only diagnostic if the kill
+            // misbehaves.
             if ($type === Helper::DOWNLOADTYPE['YOUTUBE-DL']) {
-                $this->dbHelper->deleteByGid($gid);
+                $data = [];
+                if (!empty($row['data'])) {
+                    $decoded = $this->dbHelper->getExtra($row['data']);
+                    if (is_array($decoded)) {
+                        $data = $decoded;
+                    }
+                }
+                $pid = isset($data['pid']) ? (int) $data['pid'] : 0;
+
+                if ($pid > 0 && Helper::isRunning($pid)) {
+                    Helper::stop($pid);
+                    \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                        'VAPOR CANCEL: killed ytdl pid=' . $pid . ' gid=' . $gid
+                    );
+                } else {
+                    \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                        'VAPOR CANCEL: ytdl pid not running, marking ERROR gid=' . $gid
+                        . ' pid=' . $pid
+                    );
+                }
+
+                $this->dbHelper->updateStatus($gid, Helper::STATUS['ERROR']);
+
                 return new JSONResponse([
                     'status' => 'success',
                     'message' => 'Download cancelled',
                 ]);
             }
+
+
+
 
             // aria2 download
             $result = $this->aria2->remove($gid);
