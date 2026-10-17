@@ -17,8 +17,6 @@ class YtdlController extends Controller
 {
     //@config OC\AppConfig
     private $l10n;
-    private $audio_extensions = array("mp3", "m4a", "vorbis", "opus");
-    private $video_extensions = array("mp4", "webm", "mkv");
     private $uid;
     private $downloadDir;
     private $dbconn;
@@ -108,7 +106,7 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
 
 
         $yt = $this->ytdl;
-        if (in_array($extension, $this->audio_extensions)) {
+        if (in_array($extension, Helper::AUDIO_EXTENSIONS, true)) {
             $yt->audioOnly = true;
             $yt->audioFormat = $extension;
         } else {
@@ -279,7 +277,7 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
         $data = $this->dbconn->getExtra($row["data"]);
         if (!empty($data['link'])) {
             if (isset($data['ext'])) {
-                if (in_array($data['ext'], $this->audio_extensions)) {
+                if (in_array($data['ext'], Helper::AUDIO_EXTENSIONS, true)) {
                     $this->ytdl->audioOnly = true;
                     $this->ytdl->audioFormat = $data['ext'];
                 } else {
