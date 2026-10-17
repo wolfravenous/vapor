@@ -24,6 +24,7 @@ class Helper
     public const DOWNLOADTYPE = ['ARIA2' => 1, 'YOUTUBE-DL' => 2, 'OTHERS' => 3];
     public const STATUS = ['ACTIVE' => 1, 'PAUSED' => 2, 'COMPLETE' => 3, 'WAITING' => 4, 'ERROR' => 5];
     const MAXFILELEN = 255;
+    public const AUDIO_EXTENSIONS = ['mp3', 'm4a', 'vorbis', 'opus'];
 
     public static function isUrl($URL)
     {

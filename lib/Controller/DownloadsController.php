@@ -600,6 +600,10 @@ try {
         return $paths;
     }
 
+ 
+
+
+
     /**
      * Retry a failed download (Ytdl only)
      */
@@ -612,6 +616,14 @@ try {
                 return new JSONResponse(
                     ['error' => 'User not authenticated'],
                     \OCP\AppFramework\Http::STATUS_UNAUTHORIZED
+                );
+            }
+
+            $row = $this->dbHelper->getByGid($gid);
+            if ($row && ($row['uid'] ?? null) !== $this->userId) {
+                return new JSONResponse(
+                    ['error' => 'Not authorized to retry this download'],
+                    \OCP\AppFramework\Http::STATUS_FORBIDDEN
                 );
             }
 
@@ -629,13 +641,17 @@ try {
                 ['error' => 'Failed to retry download'],
                 \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return new JSONResponse(
                 ['error' => 'Exception: ' . $e->getMessage()],
                 \OCP\AppFramework\Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }
     }
+
+
+
+
 
     /**
      * Pause a download

@@ -359,7 +359,109 @@ class Ytdl
         return ['id' => $lines[0], 'title' => $lines[1]];
     }
 
+    /**
+     * Retry a failed or cancelled ytdl download.
+     *
+     * Reads the row's stored data (serialize format), performs a defensive
+     * kill of any still-running old process, deletes the previous log file
+     * (same gid -> same log filename), then respawns via the standard
+     * download() path. download() handles the detached spawn with `exec`
+     * and mergeData of the new pid/log/path. Afterwards we flip the row
+     * back to ACTIVE so it re-enters the Active list and the sweep picks
+     * it up when the new process exits.
+     *
+     * Same gid is reused deliberately: the UI row identity is preserved.
+     * The old log is deleted so the sweep cannot read stale content before
+     * the new process writes anything.
+     *
+     * @param string $gid
+     * @return bool true on successful respawn, false otherwise
+     */
+    public function redownload(string $gid): bool
+    {
+        $dbHelper = new \OCA\Vapor\Db\Helper();
 
+        $row = $dbHelper->getByGid($gid);
+        if (!$row) {
+            return false;
+        }
+
+        // The row's data column is PHP-serialized (see Db\Helper::getExtra).
+        // Keep the same idiom the sweep and cancel code use.
+        $data = [];
+        if (!empty($row['data'])) {
+            $decoded = $dbHelper->getExtra($row['data']);
+            if (is_array($decoded)) {
+                $data = $decoded;
+            }
+        }
+
+        $link = $data['link'] ?? null;
+        if (empty($link)) {
+            return false;
+        }
+
+        // Restore the original download mode from the stored extension.
+        // The original attempt set audioOnly/audioFormat (or videoFormat)
+        // on its Ytdl instance before calling download(); this is a fresh
+        // instance with the defaults, so without this the retry would
+        // silently download a different format than the original.
+        //
+        // The audio-extension list lives in Tools\Helper::AUDIO_EXTENSIONS
+        // so this branch and YtdlController cannot drift apart.
+        $ext = $data['ext'] ?? null;
+        if (!empty($ext)) {
+            if (in_array($ext, Helper::AUDIO_EXTENSIONS, true)) {
+                $this->audioOnly = true;
+                $this->audioFormat = $ext;
+            } else {
+                $this->audioOnly = false;
+                $this->videoFormat = $ext;
+            }
+        }
+
+        // Verify, don't trust: if the old process is somehow still alive
+        // (cancel should have killed it, but defensive), stop it first.
+        $oldPid = isset($data['pid']) ? (int) $data['pid'] : 0;
+        if ($oldPid > 0 && Helper::isRunning($oldPid)) {
+            Helper::stop($oldPid);
+            \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+                'VAPOR RETRY: killed still-running old pid=' . $oldPid . ' gid=' . $gid
+            );
+        }
+
+        // Delete the previous log file. Same gid means same log filename,
+        // so the new spawn would overwrite it anyway; deleting first means
+        // the sweep cannot read stale content in the window before the new
+        // process writes.
+        $logDir = \OC::$server->get(\OCP\IConfig::class)
+            ->getSystemValue('datadirectory', '/var/www/nextcloud/data')
+            . '/vapor-ytdl-logs';
+        $oldLog = $logDir . '/' . $gid . '.log';
+        if (is_file($oldLog)) {
+            @unlink($oldLog);
+        }
+
+        // Respawn via the existing detached-spawn path. download() handles
+        // the log file, the `exec` spawn, and mergeData of pid/log/path.
+        // No .part logic here: yt-dlp resumes if a partial exists and
+        // starts fresh if not — its own default behaviour is correct.
+        $result = $this->download($link, $gid);
+
+        if (empty($result['spawned'])) {
+            return false;
+        }
+
+        // Flip the row back to ACTIVE so it leaves Failed and re-enters
+        // Active, and so the sweep will resolve it on process exit.
+        $dbHelper->updateStatus($gid, Helper::STATUS['ACTIVE']);
+
+        \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
+            'VAPOR RETRY: respawned gid=' . $gid . ' pid=' . ($result['pid'] ?? '?')
+        );
+
+        return true;
+    }
 
 
     public function check()

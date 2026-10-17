@@ -68,24 +68,37 @@ const retryDownload = async (gid) => {
     const response = await fetch(helper.generateUrl(`/apps/vapor/api/v2/downloads/${gid}/retry`), {
       method: 'POST'
     })
-    
-    if (!response.ok) {
-      throw new Error('Failed to retry download')
+
+    let data = {}
+    try {
+      data = await response.json()
+    } catch (e) {
+      // non-JSON response; fall through to !response.ok check below
     }
 
+    if (!response.ok || data.status === 'error') {
+      throw new Error(data.error || data.message || 'Failed to retry download')
+    }
+
+    // Optimistically remove the row from the Failed list so it vanishes
+    // immediately, rather than waiting for the refetch to land.
+    downloads.value.failed = downloads.value.failed.filter(d => d.gid !== gid)
+
     helper.message(t('vapor', 'Download retry started'))
-    
-    // Refresh downloads list
+
+    // Immediately refresh BOTH lists — the row should now be in Active.
+    // No need to wait for the 2s poll. Counters are computed from the
+    // downloads arrays, so the sidebar badges update automatically.
     await fetchDownloads('failed')
+    await fetchDownloads('active')
     displayDownloads.value = downloads.value.failed || []
   } catch (error) {
     console.error('Failed to retry download:', error)
-    helper.error(t('vapor', 'Failed to retry download'))
+    helper.error(t('vapor', 'Failed to retry download: ') + error.message)
   } finally {
     actionLoading.value[gid] = false
   }
 }
-
 
 const deleteDownload = async (gid) => {
   actionLoading.value[gid] = true
