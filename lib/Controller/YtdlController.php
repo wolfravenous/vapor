@@ -157,10 +157,12 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
         }
 
         $gid = Helper::generateGID($meta['id']);
-        $filename = $meta['title'] ?: 'unknown';
-
-
-
+        // Pre-insert the title as a display name so the Active view shows
+        // something readable immediately. The sweep overwrites this with
+        // the real on-disk basename once the yt-dlp log reveals it — see
+        // Helper::updateFilename (no "only if 'unknown'" guard).
+        $displayName = $meta['title'] ?: 'unknown';
+        $filename = $displayName;
 
 
         // Insert row with status=ACTIVE before the download runs.
@@ -176,13 +178,15 @@ if (preg_match('#^(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/)#i', $url)) {
 
         \OC::$server->get(\Psr\Log\LoggerInterface::class)->warning(
             'VAPOR YTDL: pre-inserted row gid=' . $gid . ' id=' . $meta['id'] . ' filename=' . $filename
+            . ' display=' . $displayName
         );
+
 
         // Build the response BEFORE starting the download.
         $response = new JSONResponse([
             'status' => 'success',
             'gid' => $gid,
-            'filename' => $filename,
+            'filename' => $displayName,
         ]);
 
 

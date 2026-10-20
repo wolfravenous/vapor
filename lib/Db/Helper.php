@@ -118,13 +118,17 @@ class Helper
 
     public function updateFilename($gid, $filename)
     {
+        // Called from the sweep on COMPLETE with the real on-disk basename
+        // read from the yt-dlp log. No "only if filename = 'unknown'"
+        // guard: the pre-insert now stores 'unknown' as a placeholder and
+        // this is the sole writer that replaces it. If a future caller
+        // needs to preserve an existing filename, add that guard at the
+        // call site, not here.
         $query = $this->conn->getQueryBuilder();
         $query->update($this->table)
             ->set("filename", $query->createNamedParameter($filename))
             ->where('gid = :gid')
-            ->andWhere('filename = :filename')
-            ->setParameter('gid', $gid)
-            ->setParameter('filename', 'unknown');
+            ->setParameter('gid', $gid);
         return $query->executeStatement();
     }
 
