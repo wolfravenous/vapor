@@ -458,15 +458,36 @@ class DownloadsController extends Controller
             // 1) DB record: filename + user's download dir (covers ytdl too)
             // 2) aria2's own metadata (covers torrents / renamed files / missing DB rows)
             $paths = [];
+            $logPath = null;
+
             if ($row && !empty($row['filename']) && $row['filename'] !== 'unknown') {
-                $paths[] = rtrim($realDownloadDir, '/') . '/' . $row['filename'];
+                $baseName = $row['filename'];
+                $paths[] = rtrim($realDownloadDir, '/') . '/' . $baseName;
+                // Add the .part file for cancelled/failed ytdl downloads
+                $paths[] = rtrim($realDownloadDir, '/') . '/' . $baseName . '.part';
             }
+
+            // If it's a ytdl row, grab the log path to delete it too
+            if ($row && (int)($row['type'] ?? 0) === Helper::DOWNLOADTYPE['YOUTUBE-DL']) {
+                $data = [];
+                if (!empty($row['data'])) {
+                    $decoded = $this->dbHelper->getExtra($row['data']);
+                    if (is_array($decoded)) {
+                        $data = $decoded;
+                    }
+                }
+                if (!empty($data['log'])) {
+                    $logPath = $data['log'];
+                }
+            }
+
             foreach ($this->getAria2Paths($gid) as $p) {
                 $paths[] = $p;
             }
             $paths = array_values(array_unique(array_filter($paths)));
+            
             $logger->warning('VAPOR DELETE: gid=' . $gid . ' | realDownloadDir=' . $realDownloadDir
-                . ' | candidates=' . json_encode($paths));
+                . ' | candidates=' . json_encode($paths) . ' | log=' . ($logPath ?? 'none'));
             
 
 $root = \OC::$server->get(\OCP\Files\IRootFolder::class);
@@ -527,6 +548,16 @@ foreach ($paths as $filePath) {
         if (@unlink($fileReal)) {
             $fileDeleted = true;
         }
+    }
+}
+
+// Delete the ytdl log file if it's still lingering on disk
+if ($logPath !== null && is_file($logPath)) {
+    $logger->warning('VAPOR DELETE: removing log file ' . $logPath);
+    if (@unlink($logPath)) {
+        $fileDeleted = true;
+    } else {
+        $logger->warning('VAPOR DELETE: failed to unlink log file ' . $logPath);
     }
 }
 
@@ -731,15 +762,15 @@ try {
     // =====================================================================
 
     /**
-     * For every ACTIVE ytdl row belonging to the current user, check whether
-     * the detached yt-dlp process (whose PID is stored in the row's data
-     * column) is still running. If it has exited, read its log file and
-     * transition the row to COMPLETE or ERROR accordingly, then delete the
-     * log file.
+     * For every ACTIVE or ERROR ytdl row belonging to the current user, check
+     * whether the detached yt-dlp process is still running. If it has exited,
+     * read its log file and either transition the row to COMPLETE/ERROR (if
+     * it was ACTIVE) or just persist the on-disk basename (if it was already
+     * ERROR), so that the Failed view's Delete handler can locate the .part
+     * file on disk.
      *
      * Called at the top of getByStatus('active'), which runs every ~3
-     * seconds while the Vapor app is open. This is the sole mechanism that
-     * un-sticks async ytdl rows.
+     * seconds while the Vapor app is open.
      */
     private function sweepYtdlDownloads(): void
     {
@@ -770,15 +801,21 @@ try {
     }
 
     /**
-     * Process a single ytdl row: skip if not ACTIVE, skip if the process is
-     * still alive, otherwise read the log and resolve the row.
+     * Process a single ytdl row.
+     *
+     * ACTIVE rows: skip if the process is still alive, otherwise read the
+     * log and resolve to COMPLETE or ERROR.
+     *
+     * ERROR rows: process only to persist a basename from the log if one is
+     * available (needed so the Failed view's Delete can find the .part file).
+     * Never change the status of an ERROR row.
      */
     private function sweepOneYtdlRow(array $row): void
     {
         $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
 
         $status = (int) ($row['status'] ?? 0);
-        if ($status !== Helper::STATUS['ACTIVE']) {
+        if ($status !== Helper::STATUS['ACTIVE'] && $status !== Helper::STATUS['ERROR']) {
             return;
         }
 
@@ -818,23 +855,44 @@ try {
 
         $outcome = $this->readYtdlOutcome($log);
 
-        if ($outcome['state'] === 'complete' && !empty($outcome['file'])) {
-            $this->dbHelper->updateFilename($gid, $outcome['file']);
-            $this->dbHelper->updateStatus($gid, Helper::STATUS['COMPLETE']);
+        if ($status === Helper::STATUS['ACTIVE']) {
+            // ACTIVE row: the process just ended. Resolve to COMPLETE or
+            // ERROR based on the log. Unchanged from before.
+            if ($outcome['state'] === 'complete' && !empty($outcome['file'])) {
+                $this->dbHelper->updateFilename($gid, $outcome['file']);
+                $this->dbHelper->updateStatus($gid, Helper::STATUS['COMPLETE']);
 
-            $path = $data['path'] ?? Helper::getDownloadDir();
-            $this->rescanYtdlFile($path, $outcome['file']);
+                $path = $data['path'] ?? Helper::getDownloadDir();
+                $this->rescanYtdlFile($path, $outcome['file']);
 
-            $logger->warning(
-                'VAPOR SWEEP: gid=' . $gid . ' resolved COMPLETE file=' . $outcome['file']
-            );
+                $logger->warning(
+                    'VAPOR SWEEP: gid=' . $gid . ' resolved COMPLETE file=' . $outcome['file']
+                );
+            } else {
+                if (!empty($outcome['file'])) {
+                    $this->dbHelper->updateFilename($gid, $outcome['file']);
+                }
+                $this->dbHelper->updateStatus($gid, Helper::STATUS['ERROR']);
+                $logger->warning(
+                    'VAPOR SWEEP: gid=' . $gid . ' resolved ERROR: '
+                    . ($outcome['error'] ?? 'unknown')
+                    . ' | filename=' . ($outcome['file'] ?? '(none)')
+                );
+            }
         } else {
-            $this->dbHelper->updateStatus($gid, Helper::STATUS['ERROR']);
-
-            $logger->warning(
-                'VAPOR SWEEP: gid=' . $gid . ' resolved ERROR: '
-                . ($outcome['error'] ?? 'unknown')
-            );
+            // ERROR row (already terminal, e.g. after Cancel). Only persist
+            // a basename if the log revealed one; never change the status.
+            if (!empty($outcome['file'])) {
+                $this->dbHelper->updateFilename($gid, $outcome['file']);
+                $logger->warning(
+                    'VAPOR SWEEP: gid=' . $gid . ' ERROR row filename persisted='
+                    . $outcome['file']
+                );
+            } else {
+                $logger->warning(
+                    'VAPOR SWEEP: gid=' . $gid . ' ERROR row, no basename in log'
+                );
+            }
         }
 
         // Delete the log file now that we've read it.
@@ -887,12 +945,27 @@ try {
         }
 
         if (!empty($errorLines)) {
+            // Still attempt to extract a destination basename: on a
+            // cancelled or partially-completed download the log may
+            // contain the [download]/[ExtractAudio] Destination line even
+            // though an ERROR: line is also present. Delete-from-Failed
+            // needs this to find the .part file on disk.
+            $errorBasename = null;
+            if (preg_match_all(
+                '/\[(?:download|ExtractAudio|ffmpeg)\]\s+Destination:\s+(.+)$/m',
+                $content,
+                $em
+            )) {
+                $errorBasename = basename(trim(end($em[1])));
+            }
+
             return [
                 'state' => 'error',
-                'file' => null,
+                'file' => $errorBasename,
                 'error' => end($errorLines),
             ];
         }
+
 
         // No error: find the last Destination line.
         // Matches:
